@@ -1,10 +1,11 @@
 -- Supabase 데이터베이스 스키마
 -- 이 파일을 Supabase 대시보드의 SQL 에디터에서 실행하세요
 
--- 플레이어 테이블 생성
+-- 플레이어 테이블 생성 (auth.users와 연결)
 CREATE TABLE IF NOT EXISTS players (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    id UUID REFERENCES auth.users(id) PRIMARY KEY,
     nickname VARCHAR(50) UNIQUE NOT NULL,
+    phone VARCHAR(20),
     balance INTEGER DEFAULT 1000,
     wins INTEGER DEFAULT 0,
     total_games INTEGER DEFAULT 0,
@@ -96,11 +97,11 @@ CREATE POLICY "Players are viewable by everyone" ON players
 
 -- 사용자는 자신의 데이터만 수정 가능
 CREATE POLICY "Users can update own player data" ON players
-    FOR UPDATE USING (auth.uid()::text = id::text);
+    FOR UPDATE USING (auth.uid() = id);
 
 -- 사용자는 자신의 데이터만 삽입 가능
 CREATE POLICY "Users can insert own player data" ON players
-    FOR INSERT WITH CHECK (auth.uid()::text = id::text);
+    FOR INSERT WITH CHECK (auth.uid() = id);
 
 -- 게임 세션은 모든 사용자가 볼 수 있음 (매칭용)
 CREATE POLICY "Game sessions are viewable by everyone" ON game_sessions
@@ -109,8 +110,8 @@ CREATE POLICY "Game sessions are viewable by everyone" ON game_sessions
 -- 사용자는 자신이 참여한 게임 세션만 수정 가능
 CREATE POLICY "Users can update own game sessions" ON game_sessions
     FOR UPDATE USING (
-        auth.uid()::text = player1_id::text OR 
-        auth.uid()::text = player2_id::text
+        auth.uid() = player1_id OR 
+        auth.uid() = player2_id
     );
 
 -- 예측 베팅은 모든 사용자가 볼 수 있음
@@ -119,7 +120,7 @@ CREATE POLICY "Prediction bets are viewable by everyone" ON prediction_bets
 
 -- 사용자는 자신의 예측 베팅만 생성/수정 가능
 CREATE POLICY "Users can manage own prediction bets" ON prediction_bets
-    FOR ALL USING (auth.uid()::text = player_id::text);
+    FOR ALL USING (auth.uid() = player_id);
 
 -- 스포츠 경기는 모든 사용자가 볼 수 있음
 CREATE POLICY "Sports matches are viewable by everyone" ON sports_matches
@@ -131,7 +132,7 @@ CREATE POLICY "Sports bets are viewable by everyone" ON sports_bets
 
 -- 사용자는 자신의 스포츠 베팅만 생성/수정 가능
 CREATE POLICY "Users can manage own sports bets" ON sports_bets
-    FOR ALL USING (auth.uid()::text = player_id::text);
+    FOR ALL USING (auth.uid() = player_id);
 
 -- 실시간 구독을 위한 함수들
 CREATE OR REPLACE FUNCTION notify_ranking_change()
@@ -148,16 +149,28 @@ CREATE TRIGGER ranking_change_trigger
     FOR EACH ROW
     EXECUTE FUNCTION notify_ranking_change();
 
--- 초기 더미 데이터 삽입 (선택사항)
-INSERT INTO players (nickname, balance, wins, total_games, total_bet, total_won, max_balance) VALUES
-('카지노킹', 45000, 234, 456, 123000, 145000, 50000),
-('럭키세븐', 38000, 189, 378, 98000, 115000, 42000),
-('잭팟헌터', 32000, 156, 312, 87000, 102000, 35000),
-('골든터치', 28000, 134, 289, 76000, 89000, 31000),
-('다이아몬드', 25000, 123, 267, 65000, 78000, 28000),
-('로얄플러시', 22000, 112, 245, 58000, 69000, 25000),
-('빅윈너', 19000, 98, 223, 52000, 61000, 22000),
-('포춘마스터', 17000, 87, 201, 47000, 54000, 19000),
-('슬롯킹', 15000, 76, 189, 42000, 48000, 17000),
-('베팅마스터', 13000, 65, 167, 38000, 43000, 15000)
-ON CONFLICT (nickname) DO NOTHING;
+-- 회원가입 시 자동으로 플레이어 프로필 생성하는 함수
+CREATE OR REPLACE FUNCTION handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO players (id, nickname, phone, balance, wins, total_games, total_bet, total_won, max_balance)
+    VALUES (
+        NEW.id,
+        COALESCE(NEW.raw_user_meta_data->>'nickname', 'Player' || substr(NEW.id::text, 1, 8)),
+        COALESCE(NEW.raw_user_meta_data->>'phone', ''),
+        1000,
+        0,
+        0,
+        0,
+        0,
+        1000
+    );
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 새 사용자 등록 시 플레이어 프로필 자동 생성 트리거
+CREATE TRIGGER on_auth_user_created
+    AFTER INSERT ON auth.users
+    FOR EACH ROW
+    EXECUTE FUNCTION handle_new_user();

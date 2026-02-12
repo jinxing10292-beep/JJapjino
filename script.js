@@ -3,10 +3,11 @@ let balance = 1000;
 let currentGame = null;
 
 // Supabase 설정
-const SUPABASE_URL = 'https://your-project.supabase.co'; // 실제 URL로 변경 필요
-const SUPABASE_ANON_KEY = 'your-anon-key'; // 실제 키로 변경 필요
+const SUPABASE_URL = 'https://zspxwvruilxybxdcqrgn.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzcHh3dnJ1aWx4eWJ4ZGNxcmduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4OTYyNTcsImV4cCI6MjA4NjQ3MjI1N30.-BiO_yTdk70Rvi4izjJczC_kTJKppJyrn4VZFqFizyU';
 let supabase = null;
 let isOnline = false;
+let currentUser = null;
 
 // 랭킹 예측 베팅 시스템
 let predictionBets = [];
@@ -187,17 +188,14 @@ let mockRankingData = []; // 실제로는 서버에서 가져올 데이터
 // Supabase 연결 함수
 async function connectToSupabase() {
     try {
-        // 데모용 - 실제로는 환경변수나 설정 파일에서 가져와야 함
         if (!supabase) {
-            // 실제 Supabase 프로젝트 설정이 필요합니다
-            alert('Supabase 설정이 필요합니다. 현재는 오프라인 모드로 작동합니다.');
-            return;
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         }
         
         // 연결 테스트
         const { data, error } = await supabase.from('players').select('count');
         
-        if (error) {
+        if (error && error.code !== 'PGRST116') {
             throw error;
         }
         
@@ -2064,3 +2062,415 @@ document.addEventListener('DOMContentLoaded', function() {
     // 온라인 상태 초기화
     updateOnlineStatus();
 });
+// 인증 시스템
+let nicknameChecked = false;
+
+// 인증 상태 확인
+async function checkAuthState() {
+    if (!supabase) return;
+    
+    try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session) {
+            currentUser = session.user;
+            await loadUserProfile();
+            updateUIForLoggedInUser();
+        } else {
+            updateUIForLoggedOutUser();
+        }
+    } catch (error) {
+        console.error('인증 상태 확인 실패:', error);
+        updateUIForLoggedOutUser();
+    }
+}
+
+// 사용자 프로필 로드
+async function loadUserProfile() {
+    if (!supabase || !currentUser) return;
+    
+    try {
+        const { data, error } = await supabase
+            .from('players')
+            .select('*')
+            .eq('id', currentUser.id)
+            .single();
+            
+        if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+            throw error;
+        }
+        
+        if (data) {
+            // 서버에서 데이터 로드
+            balance = data.balance;
+            gameStats.wins = data.wins;
+            gameStats.totalGames = data.total_games;
+            gameStats.totalBet = data.total_bet;
+            gameStats.totalWon = data.total_won;
+            gameStats.maxBalance = data.max_balance;
+            
+            updateBalanceDisplay();
+            document.getElementById('user-nickname').textContent = data.nickname;
+        }
+    } catch (error) {
+        console.error('사용자 프로필 로드 실패:', error);
+    }
+}
+
+// 로그인 상태 UI 업데이트
+function updateUIForLoggedInUser() {
+    document.getElementById('login-btn').style.display = 'none';
+    document.getElementById('user-info').style.display = 'flex';
+    isOnline = true;
+    updateOnlineStatus();
+}
+
+// 로그아웃 상태 UI 업데이트
+function updateUIForLoggedOutUser() {
+    document.getElementById('login-btn').style.display = 'block';
+    document.getElementById('user-info').style.display = 'none';
+    document.getElementById('user-nickname').textContent = 'Guest';
+    isOnline = false;
+    updateOnlineStatus();
+}
+
+// 로그인 모달 표시
+function showLogin() {
+    document.getElementById('login-modal').style.display = 'block';
+}
+
+// 로그인 모달 닫기
+function closeLogin() {
+    document.getElementById('login-modal').style.display = 'none';
+    document.getElementById('login-form').reset();
+}
+
+// 회원가입 모달 표시
+function showSignup() {
+    document.getElementById('signup-modal').style.display = 'block';
+}
+
+// 회원가입 모달 닫기
+function closeSignup() {
+    document.getElementById('signup-modal').style.display = 'none';
+    document.getElementById('signup-form').reset();
+    resetSignupValidation();
+}
+
+// 로그인 <-> 회원가입 전환
+function switchToSignup() {
+    closeLogin();
+    showSignup();
+}
+
+function switchToLogin() {
+    closeSignup();
+    showLogin();
+}
+
+// 로그인 처리
+async function handleLogin(event) {
+    event.preventDefault();
+    
+    if (!supabase) {
+        alert('온라인 기능을 사용할 수 없습니다.');
+        return;
+    }
+    
+    const phone = document.getElementById('login-phone').value;
+    const password = document.getElementById('login-password').value;
+    
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    submitBtn.classList.add('loading-btn');
+    submitBtn.disabled = true;
+    
+    try {
+        // 전화번호를 이메일 형식으로 변환 (Supabase는 이메일 기반 인증)
+        const email = `${phone.replace(/[^0-9]/g, '')}@casino.local`;
+        
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email: email,
+            password: password
+        });
+        
+        if (error) {
+            if (error.message.includes('Invalid login credentials')) {
+                alert('전화번호 또는 비밀번호가 올바르지 않습니다.');
+            } else {
+                alert('로그인 실패: ' + error.message);
+            }
+            return;
+        }
+        
+        currentUser = data.user;
+        await loadUserProfile();
+        updateUIForLoggedInUser();
+        closeLogin();
+        alert('로그인되었습니다!');
+        
+    } catch (error) {
+        console.error('로그인 오류:', error);
+        alert('로그인 중 오류가 발생했습니다.');
+    } finally {
+        submitBtn.classList.remove('loading-btn');
+        submitBtn.disabled = false;
+    }
+}
+
+// 회원가입 처리
+async function handleSignup(event) {
+    event.preventDefault();
+    
+    if (!supabase) {
+        alert('온라인 기능을 사용할 수 없습니다.');
+        return;
+    }
+    
+    if (!nicknameChecked) {
+        alert('닉네임 중복확인을 해주세요.');
+        return;
+    }
+    
+    const phone = document.getElementById('signup-phone').value;
+    const nickname = document.getElementById('signup-nickname').value;
+    const password = document.getElementById('signup-password').value;
+    const passwordConfirm = document.getElementById('signup-password-confirm').value;
+    
+    if (password !== passwordConfirm) {
+        alert('비밀번호가 일치하지 않습니다.');
+        return;
+    }
+    
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    submitBtn.classList.add('loading-btn');
+    submitBtn.disabled = true;
+    
+    try {
+        // 전화번호를 이메일 형식으로 변환
+        const email = `${phone.replace(/[^0-9]/g, '')}@casino.local`;
+        
+        // Supabase 회원가입
+        const { data, error } = await supabase.auth.signUp({
+            email: email,
+            password: password,
+            options: {
+                data: {
+                    phone: phone,
+                    nickname: nickname
+                }
+            }
+        });
+        
+        if (error) {
+            if (error.message.includes('already registered')) {
+                alert('이미 등록된 전화번호입니다.');
+            } else {
+                alert('회원가입 실패: ' + error.message);
+            }
+            return;
+        }
+        
+        // 플레이어 테이블에 데이터 추가
+        const { error: profileError } = await supabase
+            .from('players')
+            .insert({
+                id: data.user.id,
+                nickname: nickname,
+                balance: 1000,
+                wins: 0,
+                total_games: 0,
+                total_bet: 0,
+                total_won: 0,
+                max_balance: 1000
+            });
+            
+        if (profileError) {
+            console.error('프로필 생성 실패:', profileError);
+        }
+        
+        currentUser = data.user;
+        balance = 1000;
+        updateBalanceDisplay();
+        updateUIForLoggedInUser();
+        closeSignup();
+        alert('회원가입이 완료되었습니다!');
+        
+    } catch (error) {
+        console.error('회원가입 오류:', error);
+        alert('회원가입 중 오류가 발생했습니다.');
+    } finally {
+        submitBtn.classList.remove('loading-btn');
+        submitBtn.disabled = false;
+    }
+}
+
+// 닉네임 중복 확인
+async function checkNickname() {
+    if (!supabase) {
+        alert('온라인 기능을 사용할 수 없습니다.');
+        return;
+    }
+    
+    const nickname = document.getElementById('signup-nickname').value.trim();
+    
+    if (!nickname || nickname.length < 2) {
+        alert('닉네임을 2자 이상 입력해주세요.');
+        return;
+    }
+    
+    const checkBtn = document.querySelector('.check-btn');
+    checkBtn.classList.add('loading-btn');
+    checkBtn.disabled = true;
+    
+    try {
+        const { data, error } = await supabase
+            .from('players')
+            .select('nickname')
+            .eq('nickname', nickname)
+            .single();
+            
+        const statusElement = document.getElementById('nickname-status');
+        
+        if (error && error.code === 'PGRST116') {
+            // 닉네임 사용 가능
+            statusElement.textContent = '✓ 사용 가능한 닉네임입니다.';
+            statusElement.className = 'input-status success';
+            nicknameChecked = true;
+            updateSignupButton();
+        } else if (data) {
+            // 닉네임 중복
+            statusElement.textContent = '✗ 이미 사용중인 닉네임입니다.';
+            statusElement.className = 'input-status error';
+            nicknameChecked = false;
+            updateSignupButton();
+        } else if (error) {
+            throw error;
+        }
+        
+    } catch (error) {
+        console.error('닉네임 확인 오류:', error);
+        alert('닉네임 확인 중 오류가 발생했습니다.');
+        nicknameChecked = false;
+        updateSignupButton();
+    } finally {
+        checkBtn.classList.remove('loading-btn');
+        checkBtn.disabled = false;
+    }
+}
+
+// 로그아웃
+async function logout() {
+    if (!supabase) return;
+    
+    try {
+        const { error } = await supabase.auth.signOut();
+        
+        if (error) {
+            console.error('로그아웃 오류:', error);
+        }
+        
+        currentUser = null;
+        updateUIForLoggedOutUser();
+        alert('로그아웃되었습니다.');
+        
+    } catch (error) {
+        console.error('로그아웃 오류:', error);
+    }
+}
+
+// 회원가입 폼 실시간 검증 설정
+function setupSignupValidation() {
+    const nicknameInput = document.getElementById('signup-nickname');
+    const passwordInput = document.getElementById('signup-password');
+    const passwordConfirmInput = document.getElementById('signup-password-confirm');
+    
+    // 닉네임 변경 시 중복확인 초기화
+    nicknameInput.addEventListener('input', function() {
+        nicknameChecked = false;
+        document.getElementById('nickname-status').textContent = '';
+        document.getElementById('nickname-status').className = 'input-status';
+        updateSignupButton();
+    });
+    
+    // 비밀번호 확인 실시간 검증
+    passwordConfirmInput.addEventListener('input', function() {
+        const password = passwordInput.value;
+        const passwordConfirm = passwordConfirmInput.value;
+        const statusElement = document.getElementById('password-match-status');
+        
+        if (passwordConfirm.length === 0) {
+            statusElement.textContent = '';
+            statusElement.className = 'input-status';
+        } else if (password === passwordConfirm) {
+            statusElement.textContent = '✓ 비밀번호가 일치합니다.';
+            statusElement.className = 'input-status success';
+        } else {
+            statusElement.textContent = '✗ 비밀번호가 일치하지 않습니다.';
+            statusElement.className = 'input-status error';
+        }
+        
+        updateSignupButton();
+    });
+    
+    // 전화번호 자동 포맷팅
+    const phoneInputs = document.querySelectorAll('input[type="tel"]');
+    phoneInputs.forEach(input => {
+        input.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/[^0-9]/g, '');
+            if (value.length >= 3) {
+                value = value.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
+            }
+            e.target.value = value;
+        });
+    });
+}
+
+// 회원가입 버튼 활성화/비활성화
+function updateSignupButton() {
+    const nickname = document.getElementById('signup-nickname').value.trim();
+    const password = document.getElementById('signup-password').value;
+    const passwordConfirm = document.getElementById('signup-password-confirm').value;
+    const signupBtn = document.getElementById('signup-btn');
+    
+    const isValid = nicknameChecked && 
+                   nickname.length >= 2 && 
+                   password.length >= 8 && 
+                   password === passwordConfirm;
+    
+    signupBtn.disabled = !isValid;
+}
+
+// 회원가입 검증 초기화
+function resetSignupValidation() {
+    nicknameChecked = false;
+    document.getElementById('nickname-status').textContent = '';
+    document.getElementById('nickname-status').className = 'input-status';
+    document.getElementById('password-match-status').textContent = '';
+    document.getElementById('password-match-status').className = 'input-status';
+    updateSignupButton();
+}
+
+// 모달 외부 클릭 시 닫기 (기존 함수 확장)
+window.onclick = function(event) {
+    const helpModal = document.getElementById('help-modal');
+    const statsModal = document.getElementById('stats-modal');
+    const rankingModal = document.getElementById('ranking-modal');
+    const loginModal = document.getElementById('login-modal');
+    const signupModal = document.getElementById('signup-modal');
+    
+    if (event.target === helpModal) {
+        closeHelp();
+    }
+    if (event.target === statsModal) {
+        closeStats();
+    }
+    if (event.target === rankingModal) {
+        closeRanking();
+    }
+    if (event.target === loginModal) {
+        closeLogin();
+    }
+    if (event.target === signupModal) {
+        closeSignup();
+    }
+}

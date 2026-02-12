@@ -11,6 +11,11 @@
     <header>
         <h1>🎰 온라인 카지노</h1>
         <div class="header-controls">
+            <div class="user-info" id="user-info" style="display: none;">
+                <span id="user-nickname">Guest</span>
+                <button class="logout-btn" onclick="logout()">로그아웃</button>
+            </div>
+            <button class="login-btn" id="login-btn" onclick="showLogin()">🔐 로그인</button>
             <button class="help-btn" onclick="showHelp()">❓ 도움말</button>
             <button class="stats-btn" onclick="showStats()">📊 통계</button>
             <button class="ranking-btn" onclick="showRanking()">🏆 랭킹</button>
@@ -690,6 +695,76 @@
                 <button onclick="updateRanking()">🔄 랭킹 새로고침</button>
                 <button onclick="submitToRanking()">📤 내 기록 등록</button>
                 <button onclick="connectToSupabase()" id="connect-btn">🌐 온라인 연결</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 로그인 모달 -->
+    <div id="login-modal" class="modal" style="display: none;">
+        <div class="modal-content auth-modal">
+            <span class="close" onclick="closeLogin()">&times;</span>
+            <h2>🔐 로그인</h2>
+            
+            <form id="login-form" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label for="login-phone">전화번호</label>
+                    <input type="tel" id="login-phone" placeholder="010-1234-5678" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="login-password">비밀번호</label>
+                    <input type="password" id="login-password" placeholder="비밀번호를 입력하세요" required>
+                </div>
+                
+                <button type="submit" class="auth-btn">로그인</button>
+            </form>
+            
+            <div class="auth-switch">
+                <p>계정이 없으신가요? <a href="#" onclick="switchToSignup()">회원가입</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 회원가입 모달 -->
+    <div id="signup-modal" class="modal" style="display: none;">
+        <div class="modal-content auth-modal">
+            <span class="close" onclick="closeSignup()">&times;</span>
+            <h2>📝 회원가입</h2>
+            
+            <form id="signup-form" onsubmit="handleSignup(event)">
+                <div class="form-group">
+                    <label for="signup-phone">전화번호</label>
+                    <input type="tel" id="signup-phone" placeholder="010-1234-5678" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="signup-nickname">닉네임</label>
+                    <div class="nickname-input-group">
+                        <input type="text" id="signup-nickname" placeholder="닉네임 (2-10자)" required minlength="2" maxlength="10">
+                        <button type="button" class="check-btn" onclick="checkNickname()">중복확인</button>
+                    </div>
+                    <div id="nickname-status" class="input-status"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="signup-password">비밀번호</label>
+                    <input type="password" id="signup-password" placeholder="비밀번호 (8자 이상)" required minlength="8">
+                    <div class="password-requirements">
+                        <small>• 8자 이상 입력해주세요</small>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="signup-password-confirm">비밀번호 확인</label>
+                    <input type="password" id="signup-password-confirm" placeholder="비밀번호를 다시 입력하세요" required>
+                    <div id="password-match-status" class="input-status"></div>
+                </div>
+                
+                <button type="submit" class="auth-btn" id="signup-btn" disabled>회원가입</button>
+            </form>
+            
+            <div class="auth-switch">
+                <p>이미 계정이 있으신가요? <a href="#" onclick="switchToLogin()">로그인</a></p>
             </div>
         </div>
     </div>
