@@ -6,9 +6,25 @@
 
 body {
     font-family: 'Arial', sans-serif;
-    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    background: linear-gradient(135deg, #0f0f23, #1a1a2e, #16213e);
     color: white;
     min-height: 100vh;
+    background-attachment: fixed;
+}
+
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+        radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+        radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.2) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: -1;
 }
 
 header {
@@ -114,20 +130,40 @@ main {
 }
 
 .game-card {
-    background: rgba(255, 255, 255, 0.1);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
     padding: 2rem;
-    border-radius: 15px;
+    border-radius: 20px;
     text-align: center;
     cursor: pointer;
-    transition: all 0.3s ease;
-    border: 2px solid transparent;
-    backdrop-filter: blur(10px);
+    transition: all 0.4s ease;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px);
+    position: relative;
+    overflow: hidden;
+}
+
+.game-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.game-card:hover::before {
+    left: 100%;
 }
 
 .game-card:hover {
-    transform: translateY(-5px);
+    transform: translateY(-10px) scale(1.02);
     border-color: gold;
-    box-shadow: 0 10px 30px rgba(255, 215, 0, 0.3);
+    box-shadow: 
+        0 20px 40px rgba(255, 215, 0, 0.3),
+        0 0 30px rgba(255, 255, 255, 0.1);
+    background: linear-gradient(145deg, rgba(255, 215, 0, 0.1), rgba(255, 255, 255, 0.1));
 }
 
 .game-card h3 {
@@ -136,10 +172,14 @@ main {
 }
 
 .game-container {
-    background: rgba(0, 0, 0, 0.3);
+    background: linear-gradient(145deg, rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.2));
     padding: 2rem;
-    border-radius: 15px;
-    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    backdrop-filter: blur(20px);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 
+        0 20px 40px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .game-container h2 {
@@ -159,43 +199,146 @@ main {
     width: 300px;
     height: 300px;
     border-radius: 50%;
-    background: conic-gradient(
-        red 0deg 18deg,
-        black 18deg 36deg,
-        red 36deg 54deg,
-        black 54deg 72deg,
-        red 72deg 90deg,
-        black 90deg 108deg,
-        red 108deg 126deg,
-        black 126deg 144deg,
-        red 144deg 162deg,
-        black 162deg 180deg,
-        red 180deg 198deg,
-        black 198deg 216deg,
-        red 216deg 234deg,
-        black 234deg 252deg,
-        red 252deg 270deg,
-        black 270deg 288deg,
-        red 288deg 306deg,
-        black 306deg 324deg,
-        red 324deg 342deg,
-        black 342deg 360deg
-    );
     position: relative;
     transition: transform 3s cubic-bezier(0.23, 1, 0.32, 1);
-    border: 5px solid gold;
+    border: 8px solid gold;
+    background: #2c5530;
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
 }
+
+.wheel-numbers {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+}
+
+.number {
+    position: absolute;
+    width: 25px;
+    height: 25px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: bold;
+    border-radius: 50%;
+    color: white;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+}
+
+.number.red { background: #dc3545; }
+.number.black { background: #000; }
+.number.green { background: #28a745; }
 
 .pointer {
     position: absolute;
-    top: -10px;
+    top: -15px;
     left: 50%;
     transform: translateX(-50%);
     width: 0;
     height: 0;
-    border-left: 15px solid transparent;
-    border-right: 15px solid transparent;
-    border-top: 30px solid gold;
+    border-left: 20px solid transparent;
+    border-right: 20px solid transparent;
+    border-top: 40px solid gold;
+    z-index: 10;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+}
+
+.roulette-table {
+    background: #0f5132;
+    padding: 2rem;
+    border-radius: 15px;
+    margin: 2rem 0;
+    border: 3px solid gold;
+}
+
+.betting-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.number-grid {
+    display: grid;
+    grid-template-columns: repeat(13, 1fr);
+    gap: 2px;
+    margin-bottom: 1rem;
+}
+
+.bet-number {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    font-size: 0.9rem;
+}
+
+.bet-number.red { background: #dc3545; color: white; }
+.bet-number.black { background: #000; color: white; }
+.bet-number.green { background: #28a745; color: white; }
+
+.bet-number:hover {
+    transform: scale(1.1);
+    border-color: gold;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+.bet-number.selected {
+    border-color: gold;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.8);
+    transform: scale(1.1);
+}
+
+.outside-bets {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+}
+
+.bet-option {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 1rem;
+    text-align: center;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    font-weight: bold;
+}
+
+.bet-option.red { background: rgba(220, 53, 69, 0.3); }
+.bet-option.black { background: rgba(0, 0, 0, 0.5); }
+
+.bet-option:hover {
+    border-color: gold;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 215, 0, 0.3);
+}
+
+.bet-option.selected {
+    border-color: gold;
+    background: rgba(255, 215, 0, 0.2);
+}
+
+.selected-bet {
+    background: rgba(255, 215, 0, 0.2);
+    padding: 0.8rem;
+    border-radius: 8px;
+    border: 2px solid gold;
+    text-align: center;
+    font-weight: bold;
+    color: gold;
+}
+
+.card-back {
+    background: linear-gradient(45deg, #1e3c72, #2a5298);
+    color: gold;
+    font-size: 2rem;
 }
 
 .betting-area {

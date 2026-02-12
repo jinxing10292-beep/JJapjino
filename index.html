@@ -106,18 +106,103 @@
             <div class="roulette-wheel">
                 <div id="wheel" class="wheel">
                     <div class="pointer"></div>
+                    <div class="wheel-numbers">
+                        <div class="number red">32</div>
+                        <div class="number black">15</div>
+                        <div class="number red">19</div>
+                        <div class="number black">4</div>
+                        <div class="number red">21</div>
+                        <div class="number black">2</div>
+                        <div class="number red">25</div>
+                        <div class="number black">17</div>
+                        <div class="number red">34</div>
+                        <div class="number black">6</div>
+                        <div class="number red">27</div>
+                        <div class="number black">13</div>
+                        <div class="number red">36</div>
+                        <div class="number black">11</div>
+                        <div class="number red">30</div>
+                        <div class="number black">8</div>
+                        <div class="number red">23</div>
+                        <div class="number black">10</div>
+                        <div class="number red">5</div>
+                        <div class="number black">24</div>
+                        <div class="number red">16</div>
+                        <div class="number black">33</div>
+                        <div class="number red">1</div>
+                        <div class="number black">20</div>
+                        <div class="number red">14</div>
+                        <div class="number black">31</div>
+                        <div class="number red">9</div>
+                        <div class="number black">22</div>
+                        <div class="number red">18</div>
+                        <div class="number black">29</div>
+                        <div class="number red">7</div>
+                        <div class="number black">28</div>
+                        <div class="number red">12</div>
+                        <div class="number black">35</div>
+                        <div class="number red">3</div>
+                        <div class="number black">26</div>
+                        <div class="number green">0</div>
+                    </div>
+                </div>
+            </div>
+            <div class="roulette-table">
+                <div class="betting-grid">
+                    <div class="number-grid">
+                        <div class="bet-number green" onclick="placeBet('number', 0)">0</div>
+                        <div class="bet-number red" onclick="placeBet('number', 1)">1</div>
+                        <div class="bet-number black" onclick="placeBet('number', 2)">2</div>
+                        <div class="bet-number red" onclick="placeBet('number', 3)">3</div>
+                        <div class="bet-number black" onclick="placeBet('number', 4)">4</div>
+                        <div class="bet-number red" onclick="placeBet('number', 5)">5</div>
+                        <div class="bet-number black" onclick="placeBet('number', 6)">6</div>
+                        <div class="bet-number red" onclick="placeBet('number', 7)">7</div>
+                        <div class="bet-number black" onclick="placeBet('number', 8)">8</div>
+                        <div class="bet-number red" onclick="placeBet('number', 9)">9</div>
+                        <div class="bet-number black" onclick="placeBet('number', 10)">10</div>
+                        <div class="bet-number black" onclick="placeBet('number', 11)">11</div>
+                        <div class="bet-number red" onclick="placeBet('number', 12)">12</div>
+                        <div class="bet-number black" onclick="placeBet('number', 13)">13</div>
+                        <div class="bet-number red" onclick="placeBet('number', 14)">14</div>
+                        <div class="bet-number black" onclick="placeBet('number', 15)">15</div>
+                        <div class="bet-number red" onclick="placeBet('number', 16)">16</div>
+                        <div class="bet-number black" onclick="placeBet('number', 17)">17</div>
+                        <div class="bet-number red" onclick="placeBet('number', 18)">18</div>
+                        <div class="bet-number red" onclick="placeBet('number', 19)">19</div>
+                        <div class="bet-number black" onclick="placeBet('number', 20)">20</div>
+                        <div class="bet-number red" onclick="placeBet('number', 21)">21</div>
+                        <div class="bet-number black" onclick="placeBet('number', 22)">22</div>
+                        <div class="bet-number red" onclick="placeBet('number', 23)">23</div>
+                        <div class="bet-number black" onclick="placeBet('number', 24)">24</div>
+                        <div class="bet-number red" onclick="placeBet('number', 25)">25</div>
+                        <div class="bet-number black" onclick="placeBet('number', 26)">26</div>
+                        <div class="bet-number red" onclick="placeBet('number', 27)">27</div>
+                        <div class="bet-number black" onclick="placeBet('number', 28)">28</div>
+                        <div class="bet-number black" onclick="placeBet('number', 29)">29</div>
+                        <div class="bet-number red" onclick="placeBet('number', 30)">30</div>
+                        <div class="bet-number black" onclick="placeBet('number', 31)">31</div>
+                        <div class="bet-number red" onclick="placeBet('number', 32)">32</div>
+                        <div class="bet-number black" onclick="placeBet('number', 33)">33</div>
+                        <div class="bet-number red" onclick="placeBet('number', 34)">34</div>
+                        <div class="bet-number black" onclick="placeBet('number', 35)">35</div>
+                        <div class="bet-number red" onclick="placeBet('number', 36)">36</div>
+                    </div>
+                    <div class="outside-bets">
+                        <div class="bet-option red" onclick="placeBet('color', 'red')">빨강 (2:1)</div>
+                        <div class="bet-option black" onclick="placeBet('color', 'black')">검정 (2:1)</div>
+                        <div class="bet-option" onclick="placeBet('parity', 'even')">짝수 (2:1)</div>
+                        <div class="bet-option" onclick="placeBet('parity', 'odd')">홀수 (2:1)</div>
+                        <div class="bet-option" onclick="placeBet('range', 'low')">1-18 (2:1)</div>
+                        <div class="bet-option" onclick="placeBet('range', 'high')">19-36 (2:1)</div>
+                    </div>
                 </div>
             </div>
             <div class="betting-area">
                 <div class="bet-controls">
                     <input type="number" id="roulette-bet" placeholder="베팅 금액" min="1" max="1000">
-                    <select id="bet-type">
-                        <option value="red">빨강</option>
-                        <option value="black">검정</option>
-                        <option value="even">짝수</option>
-                        <option value="odd">홀수</option>
-                    </select>
-                    <button onclick="spinRoulette()">스핀!</button>
+                    <div class="selected-bet" id="selected-bet">베팅을 선택하세요</div>
+                    <button onclick="spinRoulette()" id="spin-btn" disabled>스핀!</button>
                 </div>
             </div>
             <button onclick="showGameSelection()" class="back-btn">게임 선택으로 돌아가기</button>

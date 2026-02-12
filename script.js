@@ -427,12 +427,60 @@ function updateBalance(amount) {
 }
 
 // 룰렛 게임
+let selectedBet = null;
+let rouletteNumbers = {
+    red: [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36],
+    black: [2,4,6,8,10,11,13,15,17,20,22,24,26,28,29,31,33,35]
+};
+
+function placeBet(type, value) {
+    selectedBet = { type, value };
+    
+    // 모든 선택 해제
+    document.querySelectorAll('.bet-number, .bet-option').forEach(el => {
+        el.classList.remove('selected');
+    });
+    
+    // 현재 선택 표시
+    event.target.classList.add('selected');
+    
+    // 선택된 베팅 표시
+    let betText = '';
+    let odds = '';
+    
+    switch(type) {
+        case 'number':
+            betText = `숫자 ${value}`;
+            odds = '36:1';
+            break;
+        case 'color':
+            betText = value === 'red' ? '빨강' : '검정';
+            odds = '2:1';
+            break;
+        case 'parity':
+            betText = value === 'even' ? '짝수' : '홀수';
+            odds = '2:1';
+            break;
+        case 'range':
+            betText = value === 'low' ? '1-18' : '19-36';
+            odds = '2:1';
+            break;
+    }
+    
+    document.getElementById('selected-bet').textContent = `${betText} (${odds})`;
+    document.getElementById('spin-btn').disabled = false;
+}
+
 function spinRoulette() {
     const betAmount = parseInt(document.getElementById('roulette-bet').value);
-    const betType = document.getElementById('bet-type').value;
     
     if (!betAmount || betAmount <= 0 || betAmount > balance) {
         alert('올바른 베팅 금액을 입력하세요!');
+        return;
+    }
+    
+    if (!selectedBet) {
+        alert('베팅을 선택해주세요!');
         return;
     }
     
@@ -441,35 +489,58 @@ function spinRoulette() {
     
     // 룰렛 휠 회전
     const wheel = document.getElementById('wheel');
-    const randomRotation = Math.random() * 360 + 1800; // 최소 5바퀴 회전
+    const randomRotation = Math.random() * 360 + 1800;
     wheel.style.transform = `rotate(${randomRotation}deg)`;
     
-    // 결과 계산 (간단화된 버전)
+    document.getElementById('spin-btn').disabled = true;
+    
     setTimeout(() => {
         const resultNumber = Math.floor(Math.random() * 37); // 0-36
-        const isRed = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36].includes(resultNumber);
-        const isBlack = resultNumber !== 0 && !isRed;
-        const isEven = resultNumber !== 0 && resultNumber % 2 === 0;
-        const isOdd = resultNumber !== 0 && resultNumber % 2 === 1;
         
         let won = false;
         let winAmount = 0;
+        let multiplier = 0;
         
-        if (betType === 'red' && isRed) {
-            won = true;
-            winAmount = betAmount * 2;
-        } else if (betType === 'black' && isBlack) {
-            won = true;
-            winAmount = betAmount * 2;
-        } else if (betType === 'even' && isEven) {
-            won = true;
-            winAmount = betAmount * 2;
-        } else if (betType === 'odd' && isOdd) {
-            won = true;
-            winAmount = betAmount * 2;
+        switch(selectedBet.type) {
+            case 'number':
+                if (resultNumber === selectedBet.value) {
+                    won = true;
+                    multiplier = 36;
+                }
+                break;
+            case 'color':
+                if (selectedBet.value === 'red' && rouletteNumbers.red.includes(resultNumber)) {
+                    won = true;
+                    multiplier = 2;
+                } else if (selectedBet.value === 'black' && rouletteNumbers.black.includes(resultNumber)) {
+                    won = true;
+                    multiplier = 2;
+                }
+                break;
+            case 'parity':
+                if (resultNumber !== 0) {
+                    if (selectedBet.value === 'even' && resultNumber % 2 === 0) {
+                        won = true;
+                        multiplier = 2;
+                    } else if (selectedBet.value === 'odd' && resultNumber % 2 === 1) {
+                        won = true;
+                        multiplier = 2;
+                    }
+                }
+                break;
+            case 'range':
+                if (selectedBet.value === 'low' && resultNumber >= 1 && resultNumber <= 18) {
+                    won = true;
+                    multiplier = 2;
+                } else if (selectedBet.value === 'high' && resultNumber >= 19 && resultNumber <= 36) {
+                    won = true;
+                    multiplier = 2;
+                }
+                break;
         }
         
         if (won) {
+            winAmount = betAmount * multiplier;
             updateBalance(winAmount);
             updateGameStats('roulette', betAmount, winAmount);
             alert(`축하합니다! ${resultNumber}번이 나왔습니다. $${winAmount}를 획득했습니다!`);
@@ -478,8 +549,14 @@ function spinRoulette() {
             alert(`아쉽습니다! ${resultNumber}번이 나왔습니다.`);
         }
         
-        // 입력 필드 초기화
+        // 초기화
+        selectedBet = null;
+        document.querySelectorAll('.bet-number, .bet-option').forEach(el => {
+            el.classList.remove('selected');
+        });
+        document.getElementById('selected-bet').textContent = '베팅을 선택하세요';
         document.getElementById('roulette-bet').value = '';
+        document.getElementById('spin-btn').disabled = true;
     }, 3000);
 }
 
@@ -602,7 +679,7 @@ function startBlackjack() {
     
     // 카드 표시
     displayCards(playerCards, 'player-cards');
-    displayCards([dealerCards[0]], 'dealer-cards'); // 딜러의 첫 번째 카드만 표시
+    displayDealerCards(dealerCards, 'dealer-cards', true); // 첫 카드만 표시
     
     // 점수 업데이트
     updateScores();
@@ -1276,6 +1353,9 @@ function startCrash() {
             document.getElementById('crash-bet').value = '';
         }
     }, 100);
+    
+    // 전역 변수에 저장하여 캐시아웃 시 정리 가능
+    window.crashInterval = crashInterval;
 }
 
 function cashOut() {
@@ -1285,6 +1365,9 @@ function cashOut() {
     const winAmount = Math.floor(crashGame.betAmount * crashGame.multiplier);
     
     updateBalance(winAmount);
+    
+    // 타이머 정리
+    clearInterval(window.crashInterval);
     
     document.getElementById('crash-start-btn').disabled = false;
     document.getElementById('crash-cashout-btn').disabled = true;
@@ -2473,4 +2556,21 @@ window.onclick = function(event) {
     if (event.target === signupModal) {
         closeSignup();
     }
+}
+// 딜러 카드 표시 (뒷면 카드 포함)
+function displayDealerCards(cards, containerId, hideSecond = false) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = '';
+    
+    cards.forEach((card, index) => {
+        if (hideSecond && index === 1) {
+            // 뒷면 카드 표시
+            const cardElement = document.createElement('div');
+            cardElement.className = 'card card-back';
+            cardElement.textContent = '🂠';
+            container.appendChild(cardElement);
+        } else {
+            container.appendChild(displayCard(card));
+        }
+    });
 }
