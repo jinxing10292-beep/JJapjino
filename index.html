@@ -12,6 +12,7 @@
         <div class="header-controls">
             <button class="help-btn" onclick="showHelp()">❓ 도움말</button>
             <button class="stats-btn" onclick="showStats()">📊 통계</button>
+            <button class="ranking-btn" onclick="showRanking()">🏆 랭킹</button>
             <button class="reset-btn" onclick="resetGame()">🔄 리셋</button>
             <div class="balance">
                 <span>잔액: $<span id="balance">1000</span></span>
@@ -70,6 +71,25 @@
                 <div class="game-card" onclick="showGame('crash')">
                     <h3>🚀 크래시</h3>
                     <p>언제 멈출지 결정하세요</p>
+                </div>
+                <div class="game-card" onclick="showGame('sports')">
+                    <h3>⚽ 스포츠 토토</h3>
+                    <p>가상 스포츠 경기에 베팅</p>
+                </div>
+                <div class="game-card pvp-card" onclick="showGame('pvp-blackjack')">
+                    <h3>🃏 PvP 블랙잭</h3>
+                    <p>다른 플레이어와 대결</p>
+                    <span class="pvp-badge">PvP</span>
+                </div>
+                <div class="game-card pvp-card" onclick="showGame('pvp-poker')">
+                    <h3>🃏 PvP 포커</h3>
+                    <p>실시간 포커 대전</p>
+                    <span class="pvp-badge">PvP</span>
+                </div>
+                <div class="game-card pvp-card" onclick="showGame('pvp-rps')">
+                    <h3>✂️ PvP 가위바위보</h3>
+                    <p>빠른 대전 모드</p>
+                    <span class="pvp-badge">PvP</span>
                 </div>
             </div>
         </div>
@@ -343,6 +363,129 @@
             <div id="crash-result"></div>
             <button onclick="showGameSelection()" class="back-btn">게임 선택으로 돌아가기</button>
         </div>
+
+        <!-- 스포츠 토토 게임 -->
+        <div id="sports-game" class="game-container" style="display: none;">
+            <h2>⚽ 스포츠 토토</h2>
+            <div class="sports-matches" id="sports-matches">
+                <!-- 경기 목록이 여기에 동적으로 생성됩니다 -->
+            </div>
+            <div class="sports-controls">
+                <input type="number" id="sports-bet" placeholder="베팅 금액" min="1" max="1000">
+                <button onclick="placeSportsBet()">베팅하기</button>
+                <button onclick="refreshMatches()">🔄 경기 새로고침</button>
+            </div>
+            <button onclick="showGameSelection()" class="back-btn">게임 선택으로 돌아가기</button>
+        </div>
+
+        <!-- PvP 블랙잭 게임 -->
+        <div id="pvp-blackjack-game" class="game-container" style="display: none;">
+            <h2>🃏 PvP 블랙잭</h2>
+            <div class="pvp-status">
+                <div class="player-info">
+                    <h3>내 정보</h3>
+                    <div>닉네임: <span id="my-nickname">Player</span></div>
+                    <div>잔액: $<span id="my-balance-pvp">1000</span></div>
+                </div>
+                <div class="opponent-info">
+                    <h3>상대방</h3>
+                    <div id="opponent-status">매칭 대기중...</div>
+                </div>
+            </div>
+            <div class="pvp-blackjack-table">
+                <div class="my-area">
+                    <h3>내 패</h3>
+                    <div id="pvp-my-cards" class="cards"></div>
+                    <div id="pvp-my-score">점수: 0</div>
+                </div>
+                <div class="opponent-area">
+                    <h3>상대방 패</h3>
+                    <div id="pvp-opponent-cards" class="cards"></div>
+                    <div id="pvp-opponent-score">점수: 0</div>
+                </div>
+            </div>
+            <div class="pvp-controls">
+                <input type="text" id="nickname-input" placeholder="닉네임 입력" maxlength="10">
+                <input type="number" id="pvp-blackjack-bet" placeholder="베팅 금액" min="1" max="1000">
+                <button onclick="joinPvPBlackjack()">매칭 시작</button>
+                <button id="pvp-hit-btn" onclick="pvpHit()" disabled>히트</button>
+                <button id="pvp-stand-btn" onclick="pvpStand()" disabled>스탠드</button>
+            </div>
+            <div id="pvp-blackjack-log" class="game-log"></div>
+            <button onclick="showGameSelection()" class="back-btn">게임 선택으로 돌아가기</button>
+        </div>
+
+        <!-- PvP 포커 게임 -->
+        <div id="pvp-poker-game" class="game-container" style="display: none;">
+            <h2>🃏 PvP 포커</h2>
+            <div class="pvp-status">
+                <div class="player-info">
+                    <h3>내 정보</h3>
+                    <div>닉네임: <span id="poker-my-nickname">Player</span></div>
+                    <div>잔액: $<span id="poker-my-balance">1000</span></div>
+                </div>
+                <div class="opponent-info">
+                    <h3>상대방</h3>
+                    <div id="poker-opponent-status">매칭 대기중...</div>
+                </div>
+            </div>
+            <div class="pvp-poker-table">
+                <div class="my-poker-area">
+                    <h3>내 패</h3>
+                    <div id="pvp-poker-my-cards" class="cards"></div>
+                </div>
+                <div class="opponent-poker-area">
+                    <h3>상대방 패</h3>
+                    <div id="pvp-poker-opponent-cards" class="cards"></div>
+                </div>
+            </div>
+            <div class="pvp-controls">
+                <input type="text" id="poker-nickname-input" placeholder="닉네임 입력" maxlength="10">
+                <input type="number" id="pvp-poker-bet" placeholder="베팅 금액" min="1" max="1000">
+                <button onclick="joinPvPPoker()">매칭 시작</button>
+            </div>
+            <div id="pvp-poker-log" class="game-log"></div>
+            <button onclick="showGameSelection()" class="back-btn">게임 선택으로 돌아가기</button>
+        </div>
+
+        <!-- PvP 가위바위보 게임 -->
+        <div id="pvp-rps-game" class="game-container" style="display: none;">
+            <h2>✂️ PvP 가위바위보</h2>
+            <div class="pvp-status">
+                <div class="player-info">
+                    <h3>내 정보</h3>
+                    <div>닉네임: <span id="rps-my-nickname">Player</span></div>
+                    <div>잔액: $<span id="rps-my-balance">1000</span></div>
+                </div>
+                <div class="opponent-info">
+                    <h3>상대방</h3>
+                    <div id="rps-opponent-status">매칭 대기중...</div>
+                </div>
+            </div>
+            <div class="pvp-rps-area">
+                <div class="my-rps-choice">
+                    <h3>내 선택</h3>
+                    <div id="pvp-my-rps">❓</div>
+                </div>
+                <div class="vs">VS</div>
+                <div class="opponent-rps-choice">
+                    <h3>상대방</h3>
+                    <div id="pvp-opponent-rps">❓</div>
+                </div>
+            </div>
+            <div class="pvp-controls">
+                <input type="text" id="rps-nickname-input" placeholder="닉네임 입력" maxlength="10">
+                <input type="number" id="pvp-rps-bet" placeholder="베팅 금액" min="1" max="1000">
+                <button onclick="joinPvPRPS()">매칭 시작</button>
+                <div class="pvp-rps-buttons" id="pvp-rps-buttons" style="display: none;">
+                    <button onclick="pvpPlayRPS('rock')">✊ 바위</button>
+                    <button onclick="pvpPlayRPS('paper')">✋ 보</button>
+                    <button onclick="pvpPlayRPS('scissors')">✌️ 가위</button>
+                </div>
+            </div>
+            <div id="pvp-rps-log" class="game-log"></div>
+            <button onclick="showGameSelection()" class="back-btn">게임 선택으로 돌아가기</button>
+        </div>
     </main>
 
     <!-- 도움말 모달 -->
@@ -479,6 +622,34 @@
             <div class="game-stats">
                 <h3>게임별 통계</h3>
                 <div id="game-stats-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 랭킹 모달 -->
+    <div id="ranking-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close" onclick="closeRanking()">&times;</span>
+            <h2>🏆 유저 랭킹</h2>
+            
+            <div class="ranking-tabs">
+                <button class="tab-btn active" onclick="showRankingTab('balance')">💰 잔액 랭킹</button>
+                <button class="tab-btn" onclick="showRankingTab('wins')">🏅 승수 랭킹</button>
+                <button class="tab-btn" onclick="showRankingTab('games')">🎮 게임 수 랭킹</button>
+            </div>
+            
+            <div class="my-rank-info">
+                <h3>내 순위</h3>
+                <div id="my-rank-display">순위 정보를 불러오는 중...</div>
+            </div>
+            
+            <div class="ranking-list" id="ranking-list">
+                <div class="loading">랭킹을 불러오는 중...</div>
+            </div>
+            
+            <div class="ranking-controls">
+                <button onclick="updateRanking()">🔄 랭킹 새로고침</button>
+                <button onclick="submitToRanking()">📤 내 기록 등록</button>
             </div>
         </div>
     </div>

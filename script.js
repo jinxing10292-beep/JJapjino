@@ -51,7 +51,17 @@ function loadGame() {
         if (savedGame) {
             const gameState = JSON.parse(savedGame);
             balance = gameState.balance || 1000;
-            gameStats = gameState.gameStats || gameStats;
+            gameStats = gameState.gameStats || {
+        totalGames: 0,
+        totalBet: 0,
+        totalWon: 0,
+        wins: 0,
+        maxBalance: 1000,
+        gameCount: {
+            roulette: 0, blackjack: 0, slots: 0, poker: 0, baccarat: 0,
+            dice: 0, coinflip: 0, rps: 0, racing: 0, wheel: 0, lottery: 0, crash: 0, sports: 0
+        }
+    };
             updateBalanceDisplay();
             
             // 저장된 시간 표시 (선택사항)
@@ -126,6 +136,29 @@ function closeStats() {
     document.getElementById('stats-modal').style.display = 'none';
 }
 
+// 랭킹 모달 표시
+function showRanking() {
+    document.getElementById('ranking-modal').style.display = 'block';
+    showRankingTab('balance');
+    updateRanking();
+}
+
+// 랭킹 모달 닫기
+function closeRanking() {
+    document.getElementById('ranking-modal').style.display = 'none';
+}
+
+// 랭킹 탭 전환
+function showRankingTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    currentRankingTab = tab;
+    updateRanking();
+}
+
+let currentRankingTab = 'balance';
+let mockRankingData = []; // 실제로는 서버에서 가져올 데이터
+
 // 통계 표시 업데이트
 function updateStatsDisplay() {
     document.getElementById('current-balance').textContent = `$${balance}`;
@@ -149,7 +182,8 @@ function updateStatsDisplay() {
         racing: '🐌 달팽이 레이싱',
         wheel: '🎡 행운의 바퀴',
         lottery: '🎫 복권',
-        crash: '🚀 크래시'
+        crash: '🚀 크래시',
+        sports: '⚽ 스포츠 토토'
     };
     
     const gameStatsList = document.getElementById('game-stats-list');
@@ -194,6 +228,7 @@ function updateGameStats(gameName, betAmount, wonAmount) {
 window.onclick = function(event) {
     const helpModal = document.getElementById('help-modal');
     const statsModal = document.getElementById('stats-modal');
+    const rankingModal = document.getElementById('ranking-modal');
     
     if (event.target === helpModal) {
         closeHelp();
@@ -201,12 +236,15 @@ window.onclick = function(event) {
     if (event.target === statsModal) {
         closeStats();
     }
+    if (event.target === rankingModal) {
+        closeRanking();
+    }
 }
 
 // 게임 선택 화면 표시
 function showGameSelection() {
     document.querySelector('.game-selection').style.display = 'block';
-    const games = ['roulette', 'blackjack', 'slots', 'poker', 'baccarat', 'dice', 'coinflip', 'rps', 'racing', 'wheel', 'lottery', 'crash'];
+    const games = ['roulette', 'blackjack', 'slots', 'poker', 'baccarat', 'dice', 'coinflip', 'rps', 'racing', 'wheel', 'lottery', 'crash', 'sports', 'pvp-blackjack', 'pvp-poker', 'pvp-rps'];
     games.forEach(game => {
         document.getElementById(game + '-game').style.display = 'none';
     });
@@ -216,7 +254,7 @@ function showGameSelection() {
 // 특정 게임 화면 표시
 function showGame(game) {
     document.querySelector('.game-selection').style.display = 'none';
-    const games = ['roulette', 'blackjack', 'slots', 'poker', 'baccarat', 'dice', 'coinflip', 'rps', 'racing', 'wheel', 'lottery', 'crash'];
+    const games = ['roulette', 'blackjack', 'slots', 'poker', 'baccarat', 'dice', 'coinflip', 'rps', 'racing', 'wheel', 'lottery', 'crash', 'sports', 'pvp-blackjack', 'pvp-poker', 'pvp-rps'];
     games.forEach(g => {
         document.getElementById(g + '-game').style.display = 'none';
     });
@@ -227,6 +265,8 @@ function showGame(game) {
     // 게임별 초기화
     if (game === 'lottery') {
         initializeLottery();
+    } else if (game === 'sports') {
+        initializeSports();
     }
 }
 
@@ -594,6 +634,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (event.key === 'Escape') {
             closeHelp();
             closeStats();
+            closeRanking();
         }
     });
 });
@@ -1139,3 +1180,514 @@ setInterval(() => {
 window.addEventListener('beforeunload', function() {
     saveGame();
 });
+// 스포츠 토토 게임
+let sportsMatches = [];
+let selectedMatch = null;
+let selectedOutcome = null;
+
+function initializeSports() {
+    generateMatches();
+    displayMatches();
+}
+
+function generateMatches() {
+    const teams = [
+        '레알 마드리드', '바르셀로나', '맨체스터 유나이티드', '리버풀', '바이에른 뮌헨',
+        '파리 생제르맹', '첼시', '맨체스터 시티', '유벤투스', '인터 밀란',
+        '아틀레티코 마드리드', '토트넘', '아스널', '도르트문트', '라이프치히'
+    ];
+    
+    const sports = ['⚽ 축구', '🏀 농구', '🎾 테니스', '🏐 배구'];
+    
+    sportsMatches = [];
+    
+    for (let i = 0; i < 6; i++) {
+        const team1 = teams[Math.floor(Math.random() * teams.length)];
+        let team2 = teams[Math.floor(Math.random() * teams.length)];
+        while (team2 === team1) {
+            team2 = teams[Math.floor(Math.random() * teams.length)];
+        }
+        
+        const sport = sports[Math.floor(Math.random() * sports.length)];
+        const startTime = new Date(Date.now() + Math.random() * 7200000); // 0-2시간 후
+        
+        // 배당률 생성 (합이 100%가 되도록 조정)
+        const base1 = 1.5 + Math.random() * 2; // 1.5 - 3.5
+        const base2 = 1.5 + Math.random() * 2;
+        const base3 = 3 + Math.random() * 5; // 3 - 8 (무승부는 높게)
+        
+        sportsMatches.push({
+            id: i,
+            sport: sport,
+            team1: team1,
+            team2: team2,
+            startTime: startTime,
+            odds: {
+                team1: base1.toFixed(2),
+                draw: base3.toFixed(2),
+                team2: base2.toFixed(2)
+            }
+        });
+    }
+}
+
+function displayMatches() {
+    const container = document.getElementById('sports-matches');
+    container.innerHTML = '';
+    
+    sportsMatches.forEach(match => {
+        const matchElement = document.createElement('div');
+        matchElement.className = 'match-card';
+        matchElement.innerHTML = `
+            <div class="match-header">
+                <div class="match-teams">${match.sport} ${match.team1} vs ${match.team2}</div>
+                <div class="match-time">${match.startTime.toLocaleTimeString()}</div>
+            </div>
+            <div class="match-odds">
+                <div class="odd-button" onclick="selectOutcome(${match.id}, 'team1', ${match.odds.team1})">
+                    ${match.team1} 승<br>${match.odds.team1}배
+                </div>
+                <div class="odd-button" onclick="selectOutcome(${match.id}, 'draw', ${match.odds.draw})">
+                    무승부<br>${match.odds.draw}배
+                </div>
+                <div class="odd-button" onclick="selectOutcome(${match.id}, 'team2', ${match.odds.team2})">
+                    ${match.team2} 승<br>${match.odds.team2}배
+                </div>
+            </div>
+        `;
+        container.appendChild(matchElement);
+    });
+}
+
+function selectOutcome(matchId, outcome, odds) {
+    // 이전 선택 해제
+    document.querySelectorAll('.odd-button').forEach(btn => btn.classList.remove('selected'));
+    
+    // 새 선택 표시
+    event.target.classList.add('selected');
+    
+    selectedMatch = matchId;
+    selectedOutcome = { type: outcome, odds: parseFloat(odds) };
+}
+
+function refreshMatches() {
+    generateMatches();
+    displayMatches();
+    selectedMatch = null;
+    selectedOutcome = null;
+    alert('새로운 경기가 생성되었습니다!');
+}
+
+// 스포츠 베팅 실행 (간단한 시뮬레이션)
+function placeSportsBet() {
+    const betAmount = parseInt(document.getElementById('sports-bet').value);
+    
+    if (!betAmount || betAmount <= 0 || betAmount > balance) {
+        alert('올바른 베팅 금액을 입력하세요!');
+        return;
+    }
+    
+    if (!selectedMatch || !selectedOutcome) {
+        alert('경기와 결과를 선택해주세요!');
+        return;
+    }
+    
+    updateBalance(-betAmount);
+    
+    // 랜덤 결과 생성 (33% 확률로 각각)
+    const results = ['team1', 'draw', 'team2'];
+    const actualResult = results[Math.floor(Math.random() * 3)];
+    
+    const match = sportsMatches[selectedMatch];
+    let resultText = '';
+    
+    if (actualResult === 'team1') {
+        resultText = `${match.team1} 승리!`;
+    } else if (actualResult === 'draw') {
+        resultText = '무승부!';
+    } else {
+        resultText = `${match.team2} 승리!`;
+    }
+    
+    if (selectedOutcome.type === actualResult) {
+        const winAmount = Math.floor(betAmount * selectedOutcome.odds);
+        updateBalance(winAmount);
+        updateGameStats('sports', betAmount, winAmount);
+        alert(`축하합니다! ${resultText} $${winAmount}를 획득했습니다!`);
+    } else {
+        updateGameStats('sports', betAmount, 0);
+        alert(`아쉽습니다! ${resultText}`);
+    }
+    
+    // 선택 초기화
+    document.querySelectorAll('.odd-button').forEach(btn => btn.classList.remove('selected'));
+    selectedMatch = null;
+    selectedOutcome = null;
+    document.getElementById('sports-bet').value = '';
+}
+
+// 스포츠 베팅을 위한 이벤트 리스너 추가
+document.addEventListener('DOMContentLoaded', function() {
+    // 기존 코드...
+    
+    // 스포츠 베팅 버튼에 이벤트 추가
+    const sportsBetInput = document.getElementById('sports-bet');
+    if (sportsBetInput) {
+        sportsBetInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                placeSportsBet();
+            }
+        });
+    }
+});
+
+// PvP 게임들 (시뮬레이션 - 실제로는 WebSocket이나 Firebase 필요)
+let pvpGameState = {
+    isMatching: false,
+    gameId: null,
+    opponent: null,
+    myNickname: 'Player'
+};
+
+// PvP 블랙잭
+function joinPvPBlackjack() {
+    const nickname = document.getElementById('nickname-input').value.trim();
+    const betAmount = parseInt(document.getElementById('pvp-blackjack-bet').value);
+    
+    if (!nickname) {
+        alert('닉네임을 입력해주세요!');
+        return;
+    }
+    
+    if (!betAmount || betAmount <= 0 || betAmount > balance) {
+        alert('올바른 베팅 금액을 입력하세요!');
+        return;
+    }
+    
+    pvpGameState.myNickname = nickname;
+    document.getElementById('my-nickname').textContent = nickname;
+    document.getElementById('my-balance-pvp').textContent = balance;
+    
+    // 매칭 시뮬레이션
+    document.getElementById('opponent-status').textContent = '매칭 중...';
+    
+    setTimeout(() => {
+        // 가상의 상대방 생성
+        const opponents = ['김철수', '이영희', '박민수', '최지영', '정다은'];
+        const opponent = opponents[Math.floor(Math.random() * opponents.length)];
+        
+        pvpGameState.opponent = opponent;
+        document.getElementById('opponent-status').textContent = `${opponent} (잔액: $${Math.floor(Math.random() * 2000 + 500)})`;
+        
+        // 게임 시작
+        startPvPBlackjack(betAmount);
+    }, 2000);
+}
+
+function startPvPBlackjack(betAmount) {
+    updateBalance(-betAmount);
+    
+    // 간단한 PvP 블랙잭 시뮬레이션
+    createDeck();
+    const myCards = [drawCard(), drawCard()];
+    const opponentCards = [drawCard(), drawCard()];
+    
+    displayCards(myCards, 'pvp-my-cards');
+    displayCards([opponentCards[0]], 'pvp-opponent-cards'); // 상대방 첫 카드만 표시
+    
+    document.getElementById('pvp-my-score').textContent = `점수: ${calculateScore(myCards)}`;
+    document.getElementById('pvp-opponent-score').textContent = '점수: ?';
+    
+    document.getElementById('pvp-hit-btn').disabled = false;
+    document.getElementById('pvp-stand-btn').disabled = false;
+    
+    addToGameLog('pvp-blackjack-log', `게임 시작! 베팅 금액: $${betAmount}`);
+    addToGameLog('pvp-blackjack-log', `상대방: ${pvpGameState.opponent}`);
+}
+
+function pvpHit() {
+    // 간단한 히트 구현
+    addToGameLog('pvp-blackjack-log', '히트를 선택했습니다.');
+    // 실제 구현에서는 서버와 통신
+}
+
+function pvpStand() {
+    // 간단한 스탠드 구현
+    addToGameLog('pvp-blackjack-log', '스탠드를 선택했습니다.');
+    // 실제 구현에서는 서버와 통신
+}
+
+// PvP 포커
+function joinPvPPoker() {
+    const nickname = document.getElementById('poker-nickname-input').value.trim();
+    const betAmount = parseInt(document.getElementById('pvp-poker-bet').value);
+    
+    if (!nickname) {
+        alert('닉네임을 입력해주세요!');
+        return;
+    }
+    
+    if (!betAmount || betAmount <= 0 || betAmount > balance) {
+        alert('올바른 베팅 금액을 입력하세요!');
+        return;
+    }
+    
+    document.getElementById('poker-my-nickname').textContent = nickname;
+    document.getElementById('poker-my-balance').textContent = balance;
+    
+    addToGameLog('pvp-poker-log', `매칭을 시작합니다... 베팅: $${betAmount}`);
+    
+    // 매칭 시뮬레이션
+    setTimeout(() => {
+        const opponents = ['포커왕', '카드마스터', '베팅킹', '올인러버'];
+        const opponent = opponents[Math.floor(Math.random() * opponents.length)];
+        
+        document.getElementById('poker-opponent-status').textContent = `${opponent}`;
+        addToGameLog('pvp-poker-log', `상대방을 찾았습니다: ${opponent}`);
+        
+        // 간단한 포커 게임 시뮬레이션
+        updateBalance(-betAmount);
+        const result = Math.random() > 0.5;
+        
+        setTimeout(() => {
+            if (result) {
+                const winAmount = betAmount * 2;
+                updateBalance(winAmount);
+                addToGameLog('pvp-poker-log', `승리! $${winAmount} 획득!`);
+            } else {
+                addToGameLog('pvp-poker-log', '패배...');
+            }
+        }, 3000);
+    }, 2000);
+}
+
+// PvP 가위바위보
+function joinPvPRPS() {
+    const nickname = document.getElementById('rps-nickname-input').value.trim();
+    const betAmount = parseInt(document.getElementById('pvp-rps-bet').value);
+    
+    if (!nickname) {
+        alert('닉네임을 입력해주세요!');
+        return;
+    }
+    
+    if (!betAmount || betAmount <= 0 || betAmount > balance) {
+        alert('올바른 베팅 금액을 입력하세요!');
+        return;
+    }
+    
+    document.getElementById('rps-my-nickname').textContent = nickname;
+    document.getElementById('rps-my-balance').textContent = balance;
+    
+    addToGameLog('pvp-rps-log', `매칭을 시작합니다... 베팅: $${betAmount}`);
+    
+    // 매칭 시뮬레이션
+    setTimeout(() => {
+        const opponents = ['가위킹', '바위마스터', '보의달인', '랜덤러버'];
+        const opponent = opponents[Math.floor(Math.random() * opponents.length)];
+        
+        document.getElementById('rps-opponent-status').textContent = `${opponent}`;
+        document.getElementById('pvp-rps-buttons').style.display = 'flex';
+        addToGameLog('pvp-rps-log', `상대방을 찾았습니다: ${opponent}`);
+        addToGameLog('pvp-rps-log', '가위, 바위, 보 중 하나를 선택하세요!');
+        
+        pvpGameState.currentBet = betAmount;
+        pvpGameState.opponent = opponent;
+    }, 2000);
+}
+
+function pvpPlayRPS(choice) {
+    const choices = ['rock', 'paper', 'scissors'];
+    const emojis = { rock: '✊', paper: '✋', scissors: '✌️' };
+    const opponentChoice = choices[Math.floor(Math.random() * 3)];
+    
+    document.getElementById('pvp-my-rps').textContent = emojis[choice];
+    document.getElementById('pvp-opponent-rps').textContent = emojis[opponentChoice];
+    
+    updateBalance(-pvpGameState.currentBet);
+    
+    let result = '';
+    let winAmount = 0;
+    
+    if (choice === opponentChoice) {
+        result = '무승부!';
+        winAmount = pvpGameState.currentBet;
+    } else if (
+        (choice === 'rock' && opponentChoice === 'scissors') ||
+        (choice === 'paper' && opponentChoice === 'rock') ||
+        (choice === 'scissors' && opponentChoice === 'paper')
+    ) {
+        result = '승리!';
+        winAmount = pvpGameState.currentBet * 2;
+    } else {
+        result = '패배!';
+    }
+    
+    if (winAmount > 0) {
+        updateBalance(winAmount);
+        addToGameLog('pvp-rps-log', `${result} $${winAmount} 획득!`);
+    } else {
+        addToGameLog('pvp-rps-log', result);
+    }
+    
+    document.getElementById('pvp-rps-buttons').style.display = 'none';
+    document.getElementById('pvp-rps-bet').value = '';
+}
+
+// 게임 로그 추가 함수
+function addToGameLog(logId, message) {
+    const log = document.getElementById(logId);
+    const entry = document.createElement('div');
+    entry.className = 'log-entry';
+    entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+    log.appendChild(entry);
+    log.scrollTop = log.scrollHeight;
+}
+
+// 랭킹 시스템
+function generateMockRankingData() {
+    const nicknames = [
+        '카지노킹', '럭키세븐', '잭팟헌터', '골든터치', '다이아몬드', 
+        '로얄플러시', '빅윈너', '포춘마스터', '슬롯킹', '베팅마스터',
+        '카드샤크', '룰렛킹', '블랙잭프로', '포커페이스', '슈퍼럭키'
+    ];
+    
+    mockRankingData = [];
+    
+    for (let i = 0; i < 15; i++) {
+        mockRankingData.push({
+            nickname: nicknames[i],
+            balance: Math.floor(Math.random() * 50000 + 1000),
+            wins: Math.floor(Math.random() * 500 + 10),
+            totalGames: Math.floor(Math.random() * 1000 + 50),
+            winRate: 0
+        });
+    }
+    
+    // 승률 계산
+    mockRankingData.forEach(player => {
+        player.winRate = Math.round((player.wins / player.totalGames) * 100);
+    });
+}
+
+function updateRanking() {
+    generateMockRankingData();
+    
+    let sortedData = [...mockRankingData];
+    
+    // 탭에 따라 정렬
+    switch (currentRankingTab) {
+        case 'balance':
+            sortedData.sort((a, b) => b.balance - a.balance);
+            break;
+        case 'wins':
+            sortedData.sort((a, b) => b.wins - a.wins);
+            break;
+        case 'games':
+            sortedData.sort((a, b) => b.totalGames - a.totalGames);
+            break;
+    }
+    
+    displayRanking(sortedData);
+    updateMyRank(sortedData);
+}
+
+function displayRanking(data) {
+    const container = document.getElementById('ranking-list');
+    container.innerHTML = '';
+    
+    data.forEach((player, index) => {
+        const rankItem = document.createElement('div');
+        rankItem.className = 'rank-item';
+        
+        let positionClass = '';
+        if (index === 0) positionClass = 'first';
+        else if (index === 1) positionClass = 'second';
+        else if (index === 2) positionClass = 'third';
+        
+        let valueText = '';
+        switch (currentRankingTab) {
+            case 'balance':
+                valueText = `$${player.balance.toLocaleString()}`;
+                break;
+            case 'wins':
+                valueText = `${player.wins}승`;
+                break;
+            case 'games':
+                valueText = `${player.totalGames}게임`;
+                break;
+        }
+        
+        rankItem.innerHTML = `
+            <div class="rank-position ${positionClass}">${index + 1}</div>
+            <div class="rank-info">
+                <div class="rank-nickname">${player.nickname}</div>
+                <div class="rank-details">승률: ${player.winRate}% | 총 게임: ${player.totalGames}</div>
+            </div>
+            <div class="rank-value">${valueText}</div>
+        `;
+        
+        container.appendChild(rankItem);
+    });
+}
+
+function updateMyRank(data) {
+    // 내 정보를 랭킹에서 찾기 (시뮬레이션)
+    const myData = {
+        nickname: pvpGameState.myNickname || 'Player',
+        balance: balance,
+        wins: gameStats.wins,
+        totalGames: gameStats.totalGames,
+        winRate: gameStats.totalGames > 0 ? Math.round((gameStats.wins / gameStats.totalGames) * 100) : 0
+    };
+    
+    // 내 순위 계산
+    let myRank = data.length + 1;
+    for (let i = 0; i < data.length; i++) {
+        let isHigher = false;
+        switch (currentRankingTab) {
+            case 'balance':
+                isHigher = myData.balance > data[i].balance;
+                break;
+            case 'wins':
+                isHigher = myData.wins > data[i].wins;
+                break;
+            case 'games':
+                isHigher = myData.totalGames > data[i].totalGames;
+                break;
+        }
+        
+        if (isHigher) {
+            myRank = i + 1;
+            break;
+        }
+    }
+    
+    let valueText = '';
+    switch (currentRankingTab) {
+        case 'balance':
+            valueText = `$${myData.balance.toLocaleString()}`;
+            break;
+        case 'wins':
+            valueText = `${myData.wins}승`;
+            break;
+        case 'games':
+            valueText = `${myData.totalGames}게임`;
+            break;
+    }
+    
+    document.getElementById('my-rank-display').innerHTML = `
+        <div style="font-size: 1.2rem; margin-bottom: 0.5rem;">
+            <strong>${myRank}위</strong> - ${myData.nickname}
+        </div>
+        <div>
+            ${valueText} | 승률: ${myData.winRate}% | 총 게임: ${myData.totalGames}
+        </div>
+    `;
+}
+
+function submitToRanking() {
+    // 실제로는 서버에 데이터 전송
+    alert('랭킹에 등록되었습니다! (시뮬레이션)');
+    updateRanking();
+}
