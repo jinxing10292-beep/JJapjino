@@ -9,6 +9,11 @@ let supabase = null;
 let isOnline = false;
 let currentUser = null;
 
+// Supabase 초기화
+if (typeof window.supabase !== 'undefined') {
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+}
+
 // 랭킹 예측 베팅 시스템
 let predictionBets = [];
 let predictionTimer = 600; // 10분 = 600초
@@ -870,17 +875,27 @@ function checkSlotResults(results, betAmount) {
 
 // 페이지 로드 시 초기화
 document.addEventListener('DOMContentLoaded', function() {
-    loadGame(); // 저장된 게임 로드
+    checkAuthState();
+    loadGame();
     showGameSelection();
     
-    // ESC 키로 모달 닫기
+    if (!nextRankingUpdate) {
+        nextRankingUpdate = new Date(Date.now() + predictionTimer * 1000);
+    }
+    
+    updateOnlineStatus();
+    
     document.addEventListener('keydown', function(event) {
         if (event.key === 'Escape') {
             closeHelp();
             closeStats();
             closeRanking();
+            closeLogin();
+            closeSignup();
         }
     });
+    
+    setupSignupValidation();
 });
 
 // 포커 게임
@@ -1576,20 +1591,15 @@ function placeSportsBet() {
     document.getElementById('sports-bet').value = '';
 }
 
-// 스포츠 베팅을 위한 이벤트 리스너 추가
-document.addEventListener('DOMContentLoaded', function() {
-    // 기존 코드...
-    
-    // 스포츠 베팅 버튼에 이벤트 추가
-    const sportsBetInput = document.getElementById('sports-bet');
-    if (sportsBetInput) {
-        sportsBetInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                placeSportsBet();
-            }
-        });
-    }
-});
+// 스포츠 베팅 버튼에 이벤트 추가
+const sportsBetInput = document.getElementById('sports-bet');
+if (sportsBetInput) {
+    sportsBetInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            placeSportsBet();
+        }
+    });
+}
 
 // PvP 게임들 (시뮬레이션 - 실제로는 WebSocket이나 Firebase 필요)
 let pvpGameState = {
@@ -2090,18 +2100,6 @@ function simulateRankingChanges() {
     });
 }
 
-// 페이지 로드 시 예측 타이머 시작
-document.addEventListener('DOMContentLoaded', function() {
-    // 기존 초기화 코드...
-    
-    // 예측 베팅 시스템 초기화
-    if (!nextRankingUpdate) {
-        nextRankingUpdate = new Date(Date.now() + predictionTimer * 1000);
-    }
-    
-    // 온라인 상태 초기화
-    updateOnlineStatus();
-});
 // 인증 시스템
 let nicknameChecked = false;
 
