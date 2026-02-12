@@ -5,14 +5,10 @@ let currentGame = null;
 // Supabase 설정
 const SUPABASE_URL = 'https://zspxwvruilxybxdcqrgn.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzcHh3dnJ1aWx4eWJ4ZGNxcmduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4OTYyNTcsImV4cCI6MjA4NjQ3MjI1N30.-BiO_yTdk70Rvi4izjJczC_kTJKppJyrn4VZFqFizyU';
-let supabase = null;
 let isOnline = false;
 let currentUser = null;
 
-// Supabase 초기화
-if (typeof window.supabase !== 'undefined') {
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-}
+// Supabase 초기화 (전역 supabase 객체 사용)
 
 // 랭킹 예측 베팅 시스템
 let predictionBets = [];
