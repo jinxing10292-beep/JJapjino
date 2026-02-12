@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>온라인 카지노</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <header>
@@ -636,6 +637,7 @@
                 <button class="tab-btn active" onclick="showRankingTab('balance')">💰 잔액 랭킹</button>
                 <button class="tab-btn" onclick="showRankingTab('wins')">🏅 승수 랭킹</button>
                 <button class="tab-btn" onclick="showRankingTab('games')">🎮 게임 수 랭킹</button>
+                <button class="tab-btn" onclick="showRankingTab('prediction')">🔮 랭킹 예측</button>
             </div>
             
             <div class="my-rank-info">
@@ -647,9 +649,47 @@
                 <div class="loading">랭킹을 불러오는 중...</div>
             </div>
             
+            <!-- 랭킹 예측 베팅 섹션 -->
+            <div id="prediction-section" style="display: none;">
+                <div class="prediction-info">
+                    <h3>🔮 랭킹 예측 베팅</h3>
+                    <p>10분 후 랭킹 변화를 예측하고 베팅하세요!</p>
+                    <p><strong>정확히 맞추면 베팅액의 100배!</strong></p>
+                </div>
+                
+                <div class="prediction-form">
+                    <div class="prediction-inputs">
+                        <select id="prediction-player">
+                            <option value="">플레이어 선택</option>
+                        </select>
+                        <select id="prediction-rank">
+                            <option value="">예상 순위</option>
+                            <option value="1">1위</option>
+                            <option value="2">2위</option>
+                            <option value="3">3위</option>
+                            <option value="4">4위</option>
+                            <option value="5">5위</option>
+                        </select>
+                        <input type="number" id="prediction-bet" placeholder="베팅 금액" min="1" max="1000">
+                        <button onclick="placePredictionBet()">예측 베팅</button>
+                    </div>
+                </div>
+                
+                <div class="active-predictions" id="active-predictions">
+                    <h4>내 예측 베팅</h4>
+                    <div id="my-predictions">예측 베팅이 없습니다.</div>
+                </div>
+                
+                <div class="prediction-timer">
+                    <h4>다음 랭킹 업데이트까지</h4>
+                    <div id="prediction-countdown">10:00</div>
+                </div>
+            </div>
+            
             <div class="ranking-controls">
                 <button onclick="updateRanking()">🔄 랭킹 새로고침</button>
                 <button onclick="submitToRanking()">📤 내 기록 등록</button>
+                <button onclick="connectToSupabase()" id="connect-btn">🌐 온라인 연결</button>
             </div>
         </div>
     </div>

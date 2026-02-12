@@ -2,6 +2,18 @@
 let balance = 1000;
 let currentGame = null;
 
+// Supabase 설정
+const SUPABASE_URL = 'https://your-project.supabase.co'; // 실제 URL로 변경 필요
+const SUPABASE_ANON_KEY = 'your-anon-key'; // 실제 키로 변경 필요
+let supabase = null;
+let isOnline = false;
+
+// 랭킹 예측 베팅 시스템
+let predictionBets = [];
+let predictionTimer = 600; // 10분 = 600초
+let predictionInterval = null;
+let nextRankingUpdate = null;
+
 // 블랙잭 게임 상태
 let deck = [];
 let playerCards = [];
@@ -153,11 +165,146 @@ function showRankingTab(tab) {
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
     event.target.classList.add('active');
     currentRankingTab = tab;
-    updateRanking();
+    
+    // 예측 베팅 섹션 표시/숨김
+    const predictionSection = document.getElementById('prediction-section');
+    const rankingList = document.getElementById('ranking-list');
+    
+    if (tab === 'prediction') {
+        predictionSection.style.display = 'block';
+        rankingList.style.display = 'none';
+        initializePredictionBetting();
+    } else {
+        predictionSection.style.display = 'none';
+        rankingList.style.display = 'block';
+        updateRanking();
+    }
 }
 
 let currentRankingTab = 'balance';
 let mockRankingData = []; // 실제로는 서버에서 가져올 데이터
+
+// Supabase 연결 함수
+async function connectToSupabase() {
+    try {
+        // 데모용 - 실제로는 환경변수나 설정 파일에서 가져와야 함
+        if (!supabase) {
+            // 실제 Supabase 프로젝트 설정이 필요합니다
+            alert('Supabase 설정이 필요합니다. 현재는 오프라인 모드로 작동합니다.');
+            return;
+        }
+        
+        // 연결 테스트
+        const { data, error } = await supabase.from('players').select('count');
+        
+        if (error) {
+            throw error;
+        }
+        
+        isOnline = true;
+        updateOnlineStatus();
+        await syncWithSupabase();
+        alert('온라인 모드로 연결되었습니다!');
+        
+    } catch (error) {
+        console.error('Supabase 연결 실패:', error);
+        alert('온라인 연결에 실패했습니다. 오프라인 모드로 계속합니다.');
+        isOnline = false;
+        updateOnlineStatus();
+    }
+}
+
+// 온라인 상태 표시 업데이트
+function updateOnlineStatus() {
+    const connectBtn = document.getElementById('connect-btn');
+    const header = document.querySelector('header h1');
+    
+    // 기존 상태 표시 제거
+    const existingStatus = document.querySelector('.online-status');
+    if (existingStatus) {
+        existingStatus.remove();
+    }
+    
+    // 새 상태 표시 추가
+    const statusElement = document.createElement('span');
+    statusElement.className = `online-status ${isOnline ? 'connected' : 'disconnected'}`;
+    statusElement.textContent = isOnline ? '🌐 온라인' : '📴 오프라인';
+    header.appendChild(statusElement);
+    
+    // 버튼 텍스트 변경
+    connectBtn.textContent = isOnline ? '🔌 연결 해제' : '🌐 온라인 연결';
+    connectBtn.onclick = isOnline ? disconnectFromSupabase : connectToSupabase;
+}
+
+// Supabase 연결 해제
+function disconnectFromSupabase() {
+    isOnline = false;
+    updateOnlineStatus();
+    alert('오프라인 모드로 전환되었습니다.');
+}
+
+// Supabase와 데이터 동기화
+async function syncWithSupabase() {
+    if (!isOnline || !supabase) return;
+    
+    try {
+        // 내 데이터를 Supabase에 업로드
+        const playerData = {
+            nickname: pvpGameState.myNickname || 'Player',
+            balance: balance,
+            wins: gameStats.wins,
+            total_games: gameStats.totalGames,
+            total_bet: gameStats.totalBet,
+            total_won: gameStats.totalWon,
+            max_balance: gameStats.maxBalance,
+            last_updated: new Date().toISOString()
+        };
+        
+        const { error } = await supabase
+            .from('players')
+            .upsert(playerData, { onConflict: 'nickname' });
+            
+        if (error) throw error;
+        
+        // 실시간 랭킹 데이터 가져오기
+        await fetchRealRanking();
+        
+    } catch (error) {
+        console.error('데이터 동기화 실패:', error);
+    }
+}
+
+// 실제 랭킹 데이터 가져오기
+async function fetchRealRanking() {
+    if (!isOnline || !supabase) {
+        generateMockRankingData();
+        return;
+    }
+    
+    try {
+        const { data, error } = await supabase
+            .from('players')
+            .select('*')
+            .order('balance', { ascending: false })
+            .limit(50);
+            
+        if (error) throw error;
+        
+        // Supabase 데이터를 로컬 형식으로 변환
+        mockRankingData = data.map(player => ({
+            nickname: player.nickname,
+            balance: player.balance,
+            wins: player.wins,
+            totalGames: player.total_games,
+            winRate: player.total_games > 0 ? Math.round((player.wins / player.total_games) * 100) : 0,
+            isReal: true // 실제 플레이어 표시
+        }));
+        
+    } catch (error) {
+        console.error('랭킹 데이터 가져오기 실패:', error);
+        generateMockRankingData();
+    }
+}
 
 // 통계 표시 업데이트
 function updateStatsDisplay() {
@@ -1598,7 +1745,7 @@ function displayRanking(data) {
     
     data.forEach((player, index) => {
         const rankItem = document.createElement('div');
-        rankItem.className = 'rank-item';
+        rankItem.className = `rank-item ${player.isReal ? 'real-player' : ''}`;
         
         let positionClass = '';
         if (index === 0) positionClass = 'first';
@@ -1618,10 +1765,14 @@ function displayRanking(data) {
                 break;
         }
         
+        const playerName = player.isReal ? 
+            `${player.nickname} 🌐` : 
+            player.nickname;
+        
         rankItem.innerHTML = `
             <div class="rank-position ${positionClass}">${index + 1}</div>
             <div class="rank-info">
-                <div class="rank-nickname">${player.nickname}</div>
+                <div class="rank-nickname">${playerName}</div>
                 <div class="rank-details">승률: ${player.winRate}% | 총 게임: ${player.totalGames}</div>
             </div>
             <div class="rank-value">${valueText}</div>
@@ -1691,3 +1842,225 @@ function submitToRanking() {
     alert('랭킹에 등록되었습니다! (시뮬레이션)');
     updateRanking();
 }
+// 랭킹 예측 베팅 시스템
+function initializePredictionBetting() {
+    updatePlayerOptions();
+    updatePredictionDisplay();
+    startPredictionTimer();
+}
+
+function updatePlayerOptions() {
+    const playerSelect = document.getElementById('prediction-player');
+    playerSelect.innerHTML = '<option value="">플레이어 선택</option>';
+    
+    // 현재 상위 10명의 플레이어를 옵션으로 추가
+    const topPlayers = [...mockRankingData]
+        .sort((a, b) => b.balance - a.balance)
+        .slice(0, 10);
+    
+    topPlayers.forEach(player => {
+        const option = document.createElement('option');
+        option.value = player.nickname;
+        option.textContent = `${player.nickname} (현재 잔액: $${player.balance.toLocaleString()})`;
+        playerSelect.appendChild(option);
+    });
+}
+
+function placePredictionBet() {
+    const playerName = document.getElementById('prediction-player').value;
+    const predictedRank = parseInt(document.getElementById('prediction-rank').value);
+    const betAmount = parseInt(document.getElementById('prediction-bet').value);
+    
+    if (!playerName) {
+        alert('플레이어를 선택해주세요!');
+        return;
+    }
+    
+    if (!predictedRank) {
+        alert('예상 순위를 선택해주세요!');
+        return;
+    }
+    
+    if (!betAmount || betAmount <= 0 || betAmount > balance) {
+        alert('올바른 베팅 금액을 입력하세요!');
+        return;
+    }
+    
+    // 같은 플레이어에 대한 기존 베팅 확인
+    const existingBet = predictionBets.find(bet => bet.playerName === playerName && bet.status === 'active');
+    if (existingBet) {
+        alert('이미 해당 플레이어에 대한 예측 베팅이 있습니다!');
+        return;
+    }
+    
+    // 베팅 금액 차감
+    updateBalance(-betAmount);
+    
+    // 예측 베팅 추가
+    const predictionBet = {
+        id: Date.now(),
+        playerName: playerName,
+        predictedRank: predictedRank,
+        betAmount: betAmount,
+        timestamp: new Date(),
+        status: 'active',
+        expiresAt: new Date(Date.now() + predictionTimer * 1000)
+    };
+    
+    predictionBets.push(predictionBet);
+    updatePredictionDisplay();
+    
+    // 입력 필드 초기화
+    document.getElementById('prediction-player').value = '';
+    document.getElementById('prediction-rank').value = '';
+    document.getElementById('prediction-bet').value = '';
+    
+    alert(`예측 베팅이 완료되었습니다!\n플레이어: ${playerName}\n예상 순위: ${predictedRank}위\n베팅 금액: $${betAmount}\n\n정확히 맞추면 $${betAmount * 100}를 획득합니다!`);
+}
+
+function updatePredictionDisplay() {
+    const container = document.getElementById('my-predictions');
+    
+    const activeBets = predictionBets.filter(bet => bet.status === 'active');
+    
+    if (activeBets.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: rgba(255,255,255,0.7);">예측 베팅이 없습니다.</p>';
+        return;
+    }
+    
+    container.innerHTML = '';
+    
+    activeBets.forEach(bet => {
+        const betElement = document.createElement('div');
+        betElement.className = 'prediction-item';
+        
+        const timeLeft = Math.max(0, Math.floor((bet.expiresAt - new Date()) / 1000));
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        
+        betElement.innerHTML = `
+            <div class="prediction-details">
+                <strong>${bet.playerName}</strong>이(가) <strong>${bet.predictedRank}위</strong>가 될 것으로 예측<br>
+                <small>남은 시간: ${minutes}:${seconds.toString().padStart(2, '0')}</small>
+            </div>
+            <div class="prediction-amount">
+                베팅: $${bet.betAmount}<br>
+                <small>당첨시: $${bet.betAmount * 100}</small>
+            </div>
+        `;
+        
+        container.appendChild(betElement);
+    });
+}
+
+function startPredictionTimer() {
+    // 기존 타이머 정리
+    if (predictionInterval) {
+        clearInterval(predictionInterval);
+    }
+    
+    // 다음 업데이트 시간 설정 (현재 시간 + 10분)
+    if (!nextRankingUpdate) {
+        nextRankingUpdate = new Date(Date.now() + predictionTimer * 1000);
+    }
+    
+    predictionInterval = setInterval(() => {
+        const now = new Date();
+        const timeLeft = Math.max(0, Math.floor((nextRankingUpdate - now) / 1000));
+        
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        
+        document.getElementById('prediction-countdown').textContent = 
+            `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        
+        // 예측 베팅 표시 업데이트
+        updatePredictionDisplay();
+        
+        // 시간이 다 되면 결과 처리
+        if (timeLeft <= 0) {
+            processPredictionResults();
+            // 다음 라운드 시작
+            nextRankingUpdate = new Date(Date.now() + predictionTimer * 1000);
+        }
+    }, 1000);
+}
+
+function processPredictionResults() {
+    const activeBets = predictionBets.filter(bet => bet.status === 'active');
+    
+    if (activeBets.length === 0) return;
+    
+    // 현재 랭킹 생성 (잔액 기준)
+    const currentRanking = [...mockRankingData]
+        .sort((a, b) => b.balance - a.balance);
+    
+    let totalWinnings = 0;
+    let correctPredictions = 0;
+    
+    activeBets.forEach(bet => {
+        // 예측한 플레이어의 현재 순위 찾기
+        const playerIndex = currentRanking.findIndex(player => player.nickname === bet.playerName);
+        const actualRank = playerIndex + 1;
+        
+        bet.status = 'completed';
+        bet.actualRank = actualRank;
+        
+        // 예측이 정확한지 확인
+        if (actualRank === bet.predictedRank) {
+            const winAmount = bet.betAmount * 100;
+            updateBalance(winAmount);
+            totalWinnings += winAmount;
+            correctPredictions++;
+            bet.result = 'win';
+            bet.winAmount = winAmount;
+        } else {
+            bet.result = 'lose';
+        }
+    });
+    
+    // 결과 알림
+    if (correctPredictions > 0) {
+        alert(`🎉 축하합니다!\n\n${correctPredictions}개의 예측이 정확했습니다!\n총 획득 금액: $${totalWinnings.toLocaleString()}\n\n새로운 예측 라운드가 시작됩니다!`);
+    } else if (activeBets.length > 0) {
+        alert(`😔 아쉽습니다!\n\n모든 예측이 빗나갔습니다.\n새로운 예측 라운드가 시작됩니다!`);
+    }
+    
+    // 랭킹 데이터 새로고침 (변화 시뮬레이션)
+    simulateRankingChanges();
+    updatePlayerOptions();
+    updatePredictionDisplay();
+}
+
+function simulateRankingChanges() {
+    // 랭킹에 약간의 변화를 주어 예측을 더 흥미롭게 만듦
+    mockRankingData.forEach(player => {
+        // 5% 확률로 잔액 변화
+        if (Math.random() < 0.05) {
+            const change = Math.floor((Math.random() - 0.5) * player.balance * 0.1); // ±10% 변화
+            player.balance = Math.max(100, player.balance + change);
+        }
+        
+        // 게임 수와 승수도 약간 증가
+        if (Math.random() < 0.1) {
+            player.totalGames += Math.floor(Math.random() * 3) + 1;
+            if (Math.random() < 0.4) {
+                player.wins += 1;
+            }
+            player.winRate = player.totalGames > 0 ? Math.round((player.wins / player.totalGames) * 100) : 0;
+        }
+    });
+}
+
+// 페이지 로드 시 예측 타이머 시작
+document.addEventListener('DOMContentLoaded', function() {
+    // 기존 초기화 코드...
+    
+    // 예측 베팅 시스템 초기화
+    if (!nextRankingUpdate) {
+        nextRankingUpdate = new Date(Date.now() + predictionTimer * 1000);
+    }
+    
+    // 온라인 상태 초기화
+    updateOnlineStatus();
+});

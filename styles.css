@@ -1620,3 +1620,176 @@ main {
         padding: 0.4rem 0.8rem;
     }
 }
+/* 랭킹 예측 베팅 스타일 */
+.prediction-info {
+    background: linear-gradient(135deg, rgba(138, 43, 226, 0.2), rgba(75, 0, 130, 0.2));
+    padding: 1.5rem;
+    border-radius: 10px;
+    border: 2px solid rgba(138, 43, 226, 0.5);
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.prediction-info h3 {
+    color: #8a2be2;
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+}
+
+.prediction-info p {
+    color: white;
+    margin: 0.5rem 0;
+}
+
+.prediction-form {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 1.5rem;
+    border-radius: 10px;
+    margin-bottom: 2rem;
+}
+
+.prediction-inputs {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 1rem;
+    align-items: center;
+}
+
+.prediction-inputs select,
+.prediction-inputs input,
+.prediction-inputs button {
+    padding: 0.8rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+}
+
+.prediction-inputs select,
+.prediction-inputs input {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.prediction-inputs select:focus,
+.prediction-inputs input:focus {
+    outline: none;
+    border-color: #8a2be2;
+}
+
+.prediction-inputs button {
+    background: linear-gradient(45deg, #8a2be2, #4b0082);
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: bold;
+}
+
+.prediction-inputs button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(138, 43, 226, 0.4);
+}
+
+.active-predictions {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 1.5rem;
+    border-radius: 10px;
+    margin-bottom: 2rem;
+}
+
+.active-predictions h4 {
+    color: gold;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.prediction-item {
+    background: rgba(138, 43, 226, 0.2);
+    padding: 1rem;
+    border-radius: 8px;
+    margin: 0.5rem 0;
+    border-left: 4px solid #8a2be2;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.prediction-details {
+    color: white;
+}
+
+.prediction-amount {
+    color: gold;
+    font-weight: bold;
+}
+
+.prediction-timer {
+    background: rgba(255, 0, 0, 0.1);
+    padding: 1.5rem;
+    border-radius: 10px;
+    border: 2px solid rgba(255, 0, 0, 0.3);
+    text-align: center;
+}
+
+.prediction-timer h4 {
+    color: #ff6b6b;
+    margin-bottom: 1rem;
+}
+
+#prediction-countdown {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #ff6b6b;
+    font-family: monospace;
+}
+
+.online-status {
+    display: inline-block;
+    padding: 0.3rem 0.8rem;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    margin-left: 1rem;
+}
+
+.online-status.connected {
+    background: rgba(0, 255, 0, 0.2);
+    color: #00ff00;
+    border: 1px solid #00ff00;
+}
+
+.online-status.disconnected {
+    background: rgba(255, 0, 0, 0.2);
+    color: #ff6b6b;
+    border: 1px solid #ff6b6b;
+}
+
+.real-player {
+    position: relative;
+}
+
+.real-player::after {
+    content: "🌐";
+    position: absolute;
+    right: -25px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.2rem;
+}
+
+@media (max-width: 768px) {
+    .prediction-inputs {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+    
+    .prediction-item {
+        flex-direction: column;
+        text-align: center;
+        gap: 0.5rem;
+    }
+    
+    #prediction-countdown {
+        font-size: 1.5rem;
+    }
+}
