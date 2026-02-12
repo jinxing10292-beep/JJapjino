@@ -9,8 +9,13 @@
 <body>
     <header>
         <h1>🎰 온라인 카지노</h1>
-        <div class="balance">
-            <span>잔액: $<span id="balance">1000</span></span>
+        <div class="header-controls">
+            <button class="help-btn" onclick="showHelp()">❓ 도움말</button>
+            <button class="stats-btn" onclick="showStats()">📊 통계</button>
+            <button class="reset-btn" onclick="resetGame()">🔄 리셋</button>
+            <div class="balance">
+                <span>잔액: $<span id="balance">1000</span></span>
+            </div>
         </div>
     </header>
 
@@ -339,6 +344,144 @@
             <button onclick="showGameSelection()" class="back-btn">게임 선택으로 돌아가기</button>
         </div>
     </main>
+
+    <!-- 도움말 모달 -->
+    <div id="help-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close" onclick="closeHelp()">&times;</span>
+            <h2>🎰 카지노 게임 도움말</h2>
+            
+            <div class="help-section">
+                <h3>🎯 룰렛</h3>
+                <p>• 빨강/검정, 홀수/짝수 중 선택하여 베팅</p>
+                <p>• 맞추면 베팅 금액의 2배 획득</p>
+            </div>
+
+            <div class="help-section">
+                <h3>🃏 블랙잭</h3>
+                <p>• 21에 가까운 숫자를 만드는 것이 목표</p>
+                <p>• 21을 초과하면 버스트로 패배</p>
+                <p>• 딜러보다 높은 숫자를 만들면 승리 (2배)</p>
+                <p>• 히트: 카드 한 장 더 받기, 스탠드: 카드 받기 중단</p>
+            </div>
+
+            <div class="help-section">
+                <h3>🎰 슬롯머신</h3>
+                <p>• 3개 릴이 모두 같으면 대박!</p>
+                <p>• 💎 3개: 10배, 7️⃣ 3개: 8배, 기타 3개: 5배</p>
+                <p>• 2개 일치: 2배</p>
+            </div>
+
+            <div class="help-section">
+                <h3>🃏 포커</h3>
+                <p>• 5장의 카드로 최고의 패를 만들어 컴퓨터와 대결</p>
+                <p>• 포카드 > 풀하우스 > 트리플 > 투페어 > 원페어 > 하이카드</p>
+                <p>• 승리 시 2배 획득</p>
+            </div>
+
+            <div class="help-section">
+                <h3>🎴 바카라</h3>
+                <p>• 플레이어, 뱅커, 타이 중 선택</p>
+                <p>• 플레이어 승리: 2배, 뱅커 승리: 1.95배, 타이: 8배</p>
+                <p>• 카드 합이 9에 가까운 쪽이 승리</p>
+            </div>
+
+            <div class="help-section">
+                <h3>🎲 주사위</h3>
+                <p>• 큰 수 (8-12): 2배, 작은 수 (2-6): 2배</p>
+                <p>• 7 정확히 맞추기: 5배</p>
+            </div>
+
+            <div class="help-section">
+                <h3>🪙 동전던지기</h3>
+                <p>• 앞면 또는 뒷면 선택</p>
+                <p>• 맞추면 2배 획득</p>
+            </div>
+
+            <div class="help-section">
+                <h3>✂️ 가위바위보</h3>
+                <p>• 컴퓨터와 가위바위보 대결</p>
+                <p>• 승리: 2배, 무승부: 베팅 금액 반환</p>
+            </div>
+
+            <div class="help-section">
+                <h3>🐌 달팽이 레이싱</h3>
+                <p>• 4마리 달팽이 중 우승할 달팽이 선택</p>
+                <p>• 맞추면 4배 획득</p>
+            </div>
+
+            <div class="help-section">
+                <h3>🎡 행운의 바퀴</h3>
+                <p>• 바퀴를 돌려 상금 획득</p>
+                <p>• 최대 $1000까지 획득 가능</p>
+            </div>
+
+            <div class="help-section">
+                <h3>🎫 복권</h3>
+                <p>• 1-20 중 5개 번호 선택</p>
+                <p>• 5개 일치: 1000배, 4개: 100배, 3개: 10배, 2개: 2배</p>
+            </div>
+
+            <div class="help-section">
+                <h3>🚀 크래시</h3>
+                <p>• 배수가 올라가는 동안 언제든 캐시아웃 가능</p>
+                <p>• 크래시 전에 캐시아웃하면 배수만큼 획득</p>
+                <p>• 너무 늦으면 모든 베팅 금액 손실</p>
+            </div>
+
+            <div class="help-section">
+                <h3>💾 저장 기능</h3>
+                <p>• 게임 진행 상황이 자동으로 저장됩니다</p>
+                <p>• 브라우저를 닫아도 잔액이 유지됩니다</p>
+                <p>• 리셋 버튼으로 초기 상태로 되돌릴 수 있습니다</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 통계 모달 -->
+    <div id="stats-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close" onclick="closeStats()">&times;</span>
+            <h2>📊 게임 통계</h2>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>💰 현재 잔액</h3>
+                    <p class="stat-value" id="current-balance">$1000</p>
+                </div>
+                
+                <div class="stat-card">
+                    <h3>🎮 총 게임 수</h3>
+                    <p class="stat-value" id="total-games">0</p>
+                </div>
+                
+                <div class="stat-card">
+                    <h3>💸 총 베팅 금액</h3>
+                    <p class="stat-value" id="total-bet">$0</p>
+                </div>
+                
+                <div class="stat-card">
+                    <h3>💎 총 획득 금액</h3>
+                    <p class="stat-value" id="total-won">$0</p>
+                </div>
+                
+                <div class="stat-card">
+                    <h3>📈 승률</h3>
+                    <p class="stat-value" id="win-rate">0%</p>
+                </div>
+                
+                <div class="stat-card">
+                    <h3>🏆 최고 잔액</h3>
+                    <p class="stat-value" id="max-balance">$1000</p>
+                </div>
+            </div>
+            
+            <div class="game-stats">
+                <h3>게임별 통계</h3>
+                <div id="game-stats-list"></div>
+            </div>
+        </div>
+    </div>
 
     <script src="script.js"></script>
 </body>

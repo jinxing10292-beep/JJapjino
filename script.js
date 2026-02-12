@@ -8,6 +8,201 @@ let playerCards = [];
 let dealerCards = [];
 let gameInProgress = false;
 
+// 통계 데이터
+let gameStats = {
+    totalGames: 0,
+    totalBet: 0,
+    totalWon: 0,
+    wins: 0,
+    maxBalance: 1000,
+    gameCount: {
+        roulette: 0,
+        blackjack: 0,
+        slots: 0,
+        poker: 0,
+        baccarat: 0,
+        dice: 0,
+        coinflip: 0,
+        rps: 0,
+        racing: 0,
+        wheel: 0,
+        lottery: 0,
+        crash: 0
+    }
+};
+
+// 로컬 저장소 키
+const SAVE_KEY = 'casino_game_save';
+
+// 게임 상태 저장
+function saveGame() {
+    const gameState = {
+        balance: balance,
+        gameStats: gameStats,
+        timestamp: new Date().getTime()
+    };
+    localStorage.setItem(SAVE_KEY, JSON.stringify(gameState));
+}
+
+// 게임 상태 로드
+function loadGame() {
+    try {
+        const savedGame = localStorage.getItem(SAVE_KEY);
+        if (savedGame) {
+            const gameState = JSON.parse(savedGame);
+            balance = gameState.balance || 1000;
+            gameStats = gameState.gameStats || gameStats;
+            updateBalanceDisplay();
+            
+            // 저장된 시간 표시 (선택사항)
+            if (gameState.timestamp) {
+                const saveDate = new Date(gameState.timestamp);
+                console.log(`게임 로드됨: ${saveDate.toLocaleString()}`);
+            }
+        }
+    } catch (error) {
+        console.error('게임 로드 실패:', error);
+        balance = 1000;
+        gameStats = {
+            totalGames: 0,
+            totalBet: 0,
+            totalWon: 0,
+            wins: 0,
+            maxBalance: 1000,
+            gameCount: {
+                roulette: 0, blackjack: 0, slots: 0, poker: 0, baccarat: 0,
+                dice: 0, coinflip: 0, rps: 0, racing: 0, wheel: 0, lottery: 0, crash: 0
+            }
+        };
+        updateBalanceDisplay();
+    }
+}
+
+// 게임 리셋
+function resetGame() {
+    if (confirm('정말로 게임을 초기화하시겠습니까? 모든 진행 상황과 통계가 삭제됩니다.')) {
+        localStorage.removeItem(SAVE_KEY);
+        balance = 1000;
+        gameStats = {
+            totalGames: 0,
+            totalBet: 0,
+            totalWon: 0,
+            wins: 0,
+            maxBalance: 1000,
+            gameCount: {
+                roulette: 0, blackjack: 0, slots: 0, poker: 0, baccarat: 0,
+                dice: 0, coinflip: 0, rps: 0, racing: 0, wheel: 0, lottery: 0, crash: 0
+            }
+        };
+        updateBalanceDisplay();
+        showGameSelection();
+        alert('게임이 초기화되었습니다!');
+    }
+}
+
+// 잔액 표시 업데이트
+function updateBalanceDisplay() {
+    document.getElementById('balance').textContent = balance;
+}
+
+// 도움말 모달 표시
+function showHelp() {
+    document.getElementById('help-modal').style.display = 'block';
+}
+
+// 도움말 모달 닫기
+function closeHelp() {
+    document.getElementById('help-modal').style.display = 'none';
+}
+
+// 통계 모달 표시
+function showStats() {
+    updateStatsDisplay();
+    document.getElementById('stats-modal').style.display = 'block';
+}
+
+// 통계 모달 닫기
+function closeStats() {
+    document.getElementById('stats-modal').style.display = 'none';
+}
+
+// 통계 표시 업데이트
+function updateStatsDisplay() {
+    document.getElementById('current-balance').textContent = `$${balance}`;
+    document.getElementById('total-games').textContent = gameStats.totalGames;
+    document.getElementById('total-bet').textContent = `$${gameStats.totalBet}`;
+    document.getElementById('total-won').textContent = `$${gameStats.totalWon}`;
+    document.getElementById('win-rate').textContent = 
+        gameStats.totalGames > 0 ? `${Math.round((gameStats.wins / gameStats.totalGames) * 100)}%` : '0%';
+    document.getElementById('max-balance').textContent = `$${gameStats.maxBalance}`;
+    
+    // 게임별 통계
+    const gameNames = {
+        roulette: '🎯 룰렛',
+        blackjack: '🃏 블랙잭',
+        slots: '🎰 슬롯머신',
+        poker: '🃏 포커',
+        baccarat: '🎴 바카라',
+        dice: '🎲 주사위',
+        coinflip: '🪙 동전던지기',
+        rps: '✂️ 가위바위보',
+        racing: '🐌 달팽이 레이싱',
+        wheel: '🎡 행운의 바퀴',
+        lottery: '🎫 복권',
+        crash: '🚀 크래시'
+    };
+    
+    const gameStatsList = document.getElementById('game-stats-list');
+    gameStatsList.innerHTML = '';
+    
+    Object.entries(gameStats.gameCount).forEach(([game, count]) => {
+        if (count > 0) {
+            const item = document.createElement('div');
+            item.className = 'game-stat-item';
+            item.innerHTML = `
+                <span class="game-name">${gameNames[game]}</span>
+                <span class="game-count">${count}회</span>
+            `;
+            gameStatsList.appendChild(item);
+        }
+    });
+    
+    if (gameStatsList.children.length === 0) {
+        gameStatsList.innerHTML = '<p style="text-align: center; color: rgba(255,255,255,0.7);">아직 플레이한 게임이 없습니다.</p>';
+    }
+}
+
+// 게임 통계 업데이트
+function updateGameStats(gameName, betAmount, wonAmount) {
+    gameStats.totalGames++;
+    gameStats.totalBet += betAmount;
+    gameStats.totalWon += wonAmount;
+    gameStats.gameCount[gameName]++;
+    
+    if (wonAmount > betAmount) {
+        gameStats.wins++;
+    }
+    
+    if (balance > gameStats.maxBalance) {
+        gameStats.maxBalance = balance;
+    }
+    
+    saveGame();
+}
+
+// 모달 외부 클릭 시 닫기
+window.onclick = function(event) {
+    const helpModal = document.getElementById('help-modal');
+    const statsModal = document.getElementById('stats-modal');
+    
+    if (event.target === helpModal) {
+        closeHelp();
+    }
+    if (event.target === statsModal) {
+        closeStats();
+    }
+}
+
 // 게임 선택 화면 표시
 function showGameSelection() {
     document.querySelector('.game-selection').style.display = 'block';
@@ -38,10 +233,11 @@ function showGame(game) {
 // 잔액 업데이트
 function updateBalance(amount) {
     balance += amount;
-    document.getElementById('balance').textContent = balance;
+    updateBalanceDisplay();
+    saveGame(); // 잔액 변경 시 자동 저장
     
     if (balance <= 0) {
-        alert('잔액이 부족합니다! 게임을 다시 시작하려면 페이지를 새로고침하세요.');
+        alert('잔액이 부족합니다! 리셋 버튼을 눌러 게임을 다시 시작하세요.');
     }
 }
 
@@ -90,8 +286,10 @@ function spinRoulette() {
         
         if (won) {
             updateBalance(winAmount);
+            updateGameStats('roulette', betAmount, winAmount);
             alert(`축하합니다! ${resultNumber}번이 나왔습니다. $${winAmount}를 획득했습니다!`);
         } else {
+            updateGameStats('roulette', betAmount, 0);
             alert(`아쉽습니다! ${resultNumber}번이 나왔습니다.`);
         }
         
@@ -388,7 +586,16 @@ function checkSlotResults(results, betAmount) {
 
 // 페이지 로드 시 초기화
 document.addEventListener('DOMContentLoaded', function() {
+    loadGame(); // 저장된 게임 로드
     showGameSelection();
+    
+    // ESC 키로 모달 닫기
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            closeHelp();
+            closeStats();
+        }
+    });
 });
 
 // 포커 게임
@@ -900,3 +1107,35 @@ function cashOut() {
         `캐시아웃! ${crashGame.multiplier.toFixed(2)}x로 $${winAmount}를 획득했습니다!`;
     document.getElementById('crash-bet').value = '';
 }
+// 저장 알림 표시
+function showSaveNotification() {
+    // 기존 알림이 있으면 제거
+    const existingNotification = document.querySelector('.save-notification');
+    if (existingNotification) {
+        existingNotification.remove();
+    }
+    
+    // 새 알림 생성
+    const notification = document.createElement('div');
+    notification.className = 'save-notification';
+    notification.textContent = '💾 게임이 저장되었습니다';
+    document.body.appendChild(notification);
+    
+    // 3초 후 알림 제거
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 3000);
+}
+
+// 주기적 자동 저장 (5분마다)
+setInterval(() => {
+    saveGame();
+    showSaveNotification();
+}, 300000); // 5분 = 300,000ms
+
+// 페이지 종료 전 저장
+window.addEventListener('beforeunload', function() {
+    saveGame();
+});
