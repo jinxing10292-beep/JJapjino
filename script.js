@@ -189,12 +189,12 @@ let realRankingData = []; // 실제 사용자 데이터만
 // Supabase 연결 함수
 async function connectToSupabase() {
     try {
-        if (!supabase) {
+        if (typeof window.supabase !== 'undefined') {
             supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         }
         
         // 연결 테스트
-        const { data, error } = await supabase.from('players').select('count');
+        const { data, error } = await window.supabase.from('players').select('count');
         
         if (error && error.code !== 'PGRST116') {
             throw error;
@@ -2104,7 +2104,7 @@ async function checkAuthState() {
     if (!supabase) return;
     
     try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session } } = await window.supabase.auth.getSession();
         
         if (session) {
             currentUser = session.user;
@@ -2124,7 +2124,7 @@ async function loadUserProfile() {
     if (!supabase || !currentUser) return;
     
     try {
-        const { data, error } = await supabase
+        const { data, error } = await window.supabase
             .from('players')
             .select('*')
             .eq('id', currentUser.id)
@@ -2222,7 +2222,7 @@ async function handleLogin(event) {
         // 전화번호를 이메일 형식으로 변환 (Supabase는 이메일 기반 인증)
         const email = `${phone.replace(/[^0-9]/g, '')}@casino.local`;
         
-        const { data, error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await window.supabase.auth.signInWithPassword({
             email: email,
             password: password
         });
@@ -2284,7 +2284,7 @@ async function handleSignup(event) {
         const email = `${phone.replace(/[^0-9]/g, '')}@casino.local`;
         
         // Supabase 회원가입
-        const { data, error } = await supabase.auth.signUp({
+        const { data, error } = await window.supabase.auth.signUp({
             email: email,
             password: password,
             options: {
@@ -2397,7 +2397,7 @@ async function logout() {
     if (!supabase) return;
     
     try {
-        const { error } = await supabase.auth.signOut();
+        const { error } = await window.supabase.auth.signOut();
         
         if (error) {
             console.error('로그아웃 오류:', error);
