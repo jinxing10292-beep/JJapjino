@@ -153,7 +153,7 @@ function closeStats() {
 function showRanking() {
     document.getElementById('ranking-modal').style.display = 'block';
     showRankingTab('balance');
-    updateRanking();
+    loadRealRanking();
 }
 
 // 랭킹 모달 닫기
@@ -178,12 +178,12 @@ function showRankingTab(tab) {
     } else {
         predictionSection.style.display = 'none';
         rankingList.style.display = 'block';
-        updateRanking();
+        loadRealRanking();
     }
 }
 
 let currentRankingTab = 'balance';
-let mockRankingData = []; // 실제로는 서버에서 가져올 데이터
+let realRankingData = []; // 실제 사용자 데이터만
 
 // Supabase 연결 함수
 async function connectToSupabase() {
@@ -243,12 +243,12 @@ function disconnectFromSupabase() {
 
 // Supabase와 데이터 동기화
 async function syncWithSupabase() {
-    if (!isOnline || !supabase) return;
+    if (!isOnline || !supabase || !currentUser) return;
     
     try {
         // 내 데이터를 Supabase에 업로드
         const playerData = {
-            nickname: pvpGameState.myNickname || 'Player',
+            nickname: currentUser.user_metadata?.nickname || 'Player',
             balance: balance,
             wins: gameStats.wins,
             total_games: gameStats.totalGames,
@@ -260,12 +260,12 @@ async function syncWithSupabase() {
         
         const { error } = await supabase
             .from('players')
-            .upsert(playerData, { onConflict: 'nickname' });
+            .upsert(playerData, { onConflict: 'id' });
             
         if (error) throw error;
         
         // 실시간 랭킹 데이터 가져오기
-        await fetchRealRanking();
+        await loadRealRanking();
         
     } catch (error) {
         console.error('데이터 동기화 실패:', error);
@@ -273,35 +273,57 @@ async function syncWithSupabase() {
 }
 
 // 실제 랭킹 데이터 가져오기
-async function fetchRealRanking() {
-    if (!isOnline || !supabase) {
-        generateMockRankingData();
+async function loadRealRanking() {
+    if (!supabase) {
+        displayEmptyRanking();
         return;
     }
     
     try {
+        let orderBy = 'balance';
+        if (currentRankingTab === 'wins') orderBy = 'wins';
+        if (currentRankingTab === 'games') orderBy = 'total_games';
+        
         const { data, error } = await supabase
             .from('players')
             .select('*')
-            .order('balance', { ascending: false })
+            .order(orderBy, { ascending: false })
             .limit(50);
             
         if (error) throw error;
         
         // Supabase 데이터를 로컬 형식으로 변환
-        mockRankingData = data.map(player => ({
+        realRankingData = data.map(player => ({
             nickname: player.nickname,
             balance: player.balance,
             wins: player.wins,
             totalGames: player.total_games,
             winRate: player.total_games > 0 ? Math.round((player.wins / player.total_games) * 100) : 0,
-            isReal: true // 실제 플레이어 표시
+            isReal: true
         }));
+        
+        displayRanking(realRankingData);
+        updateMyRank(realRankingData);
         
     } catch (error) {
         console.error('랭킹 데이터 가져오기 실패:', error);
-        generateMockRankingData();
+        displayEmptyRanking();
     }
+}
+
+// 빈 랭킹 표시
+function displayEmptyRanking() {
+    const container = document.getElementById('ranking-list');
+    container.innerHTML = '<div class="loading">아직 등록된 플레이어가 없습니다.<br>첫 번째 플레이어가 되어보세요!</div>';
+    
+    document.getElementById('my-rank-display').innerHTML = `
+        <div style="font-size: 1.2rem; margin-bottom: 0.5rem;">
+            <strong>순위 없음</strong> - ${currentUser ? currentUser.user_metadata?.nickname || 'Player' : 'Guest'}
+        </div>
+        <div>
+            로그인하고 게임을 플레이하여 랭킹에 등록하세요!
+        </div>
+    `;
 }
 
 // 통계 표시 업데이트
@@ -1772,101 +1794,23 @@ function addToGameLog(logId, message) {
     log.scrollTop = log.scrollHeight;
 }
 
-// 랭킹 시스템
-function generateMockRankingData() {
-    const nicknames = [
-        '카지노킹', '럭키세븐', '잭팟헌터', '골든터치', '다이아몬드', 
-        '로얄플러시', '빅윈너', '포춘마스터', '슬롯킹', '베팅마스터',
-        '카드샤크', '룰렛킹', '블랙잭프로', '포커페이스', '슈퍼럭키'
-    ];
-    
-    mockRankingData = [];
-    
-    for (let i = 0; i < 15; i++) {
-        mockRankingData.push({
-            nickname: nicknames[i],
-            balance: Math.floor(Math.random() * 50000 + 1000),
-            wins: Math.floor(Math.random() * 500 + 10),
-            totalGames: Math.floor(Math.random() * 1000 + 50),
-            winRate: 0
-        });
-    }
-    
-    // 승률 계산
-    mockRankingData.forEach(player => {
-        player.winRate = Math.round((player.wins / player.totalGames) * 100);
-    });
-}
-
-function updateRanking() {
-    generateMockRankingData();
-    
-    let sortedData = [...mockRankingData];
-    
-    // 탭에 따라 정렬
-    switch (currentRankingTab) {
-        case 'balance':
-            sortedData.sort((a, b) => b.balance - a.balance);
-            break;
-        case 'wins':
-            sortedData.sort((a, b) => b.wins - a.wins);
-            break;
-        case 'games':
-            sortedData.sort((a, b) => b.totalGames - a.totalGames);
-            break;
-    }
-    
-    displayRanking(sortedData);
-    updateMyRank(sortedData);
-}
-
-function displayRanking(data) {
-    const container = document.getElementById('ranking-list');
-    container.innerHTML = '';
-    
-    data.forEach((player, index) => {
-        const rankItem = document.createElement('div');
-        rankItem.className = `rank-item ${player.isReal ? 'real-player' : ''}`;
-        
-        let positionClass = '';
-        if (index === 0) positionClass = 'first';
-        else if (index === 1) positionClass = 'second';
-        else if (index === 2) positionClass = 'third';
-        
-        let valueText = '';
-        switch (currentRankingTab) {
-            case 'balance':
-                valueText = `$${player.balance.toLocaleString()}`;
-                break;
-            case 'wins':
-                valueText = `${player.wins}승`;
-                break;
-            case 'games':
-                valueText = `${player.totalGames}게임`;
-                break;
-        }
-        
-        const playerName = player.isReal ? 
-            `${player.nickname} 🌐` : 
-            player.nickname;
-        
-        rankItem.innerHTML = `
-            <div class="rank-position ${positionClass}">${index + 1}</div>
-            <div class="rank-info">
-                <div class="rank-nickname">${playerName}</div>
-                <div class="rank-details">승률: ${player.winRate}% | 총 게임: ${player.totalGames}</div>
-            </div>
-            <div class="rank-value">${valueText}</div>
-        `;
-        
-        container.appendChild(rankItem);
-    });
-}
-
+// 내 순위 업데이트
 function updateMyRank(data) {
-    // 내 정보를 랭킹에서 찾기 (시뮬레이션)
+    if (!currentUser) {
+        document.getElementById('my-rank-display').innerHTML = `
+            <div style="font-size: 1.2rem; margin-bottom: 0.5rem;">
+                <strong>로그인 필요</strong>
+            </div>
+            <div>
+                로그인하여 랭킹에 참여하세요!
+            </div>
+        `;
+        return;
+    }
+    
+    // 내 정보를 랭킹에서 찾기
     const myData = {
-        nickname: pvpGameState.myNickname || 'Player',
+        nickname: currentUser.user_metadata?.nickname || 'Player',
         balance: balance,
         wins: gameStats.wins,
         totalGames: gameStats.totalGames,
@@ -1919,9 +1863,13 @@ function updateMyRank(data) {
 }
 
 function submitToRanking() {
-    // 실제로는 서버에 데이터 전송
-    alert('랭킹에 등록되었습니다! (시뮬레이션)');
-    updateRanking();
+    if (!currentUser || !supabase) {
+        alert('로그인 후 이용해주세요.');
+        return;
+    }
+    
+    syncWithSupabase();
+    alert('랭킹에 등록되었습니다!');
 }
 // 랭킹 예측 베팅 시스템
 function initializePredictionBetting() {
@@ -1934,8 +1882,17 @@ function updatePlayerOptions() {
     const playerSelect = document.getElementById('prediction-player');
     playerSelect.innerHTML = '<option value="">플레이어 선택</option>';
     
+    if (!realRankingData || realRankingData.length === 0) {
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = '등록된 플레이어가 없습니다';
+        option.disabled = true;
+        playerSelect.appendChild(option);
+        return;
+    }
+    
     // 현재 상위 10명의 플레이어를 옵션으로 추가
-    const topPlayers = [...mockRankingData]
+    const topPlayers = [...realRankingData]
         .sort((a, b) => b.balance - a.balance)
         .slice(0, 10);
     
@@ -2073,7 +2030,7 @@ function processPredictionResults() {
     if (activeBets.length === 0) return;
     
     // 현재 랭킹 생성 (잔액 기준)
-    const currentRanking = [...mockRankingData]
+    const currentRanking = [...realRankingData]
         .sort((a, b) => b.balance - a.balance);
     
     let totalWinnings = 0;
@@ -2107,8 +2064,8 @@ function processPredictionResults() {
         alert(`😔 아쉽습니다!\n\n모든 예측이 빗나갔습니다.\n새로운 예측 라운드가 시작됩니다!`);
     }
     
-    // 랭킹 데이터 새로고침 (변화 시뮬레이션)
-    simulateRankingChanges();
+    // 랭킹 데이터 새로고침
+    loadRealRanking();
     updatePlayerOptions();
     updatePredictionDisplay();
 }
@@ -2572,5 +2529,50 @@ function displayDealerCards(cards, containerId, hideSecond = false) {
         } else {
             container.appendChild(displayCard(card));
         }
+    });
+}
+// 랭킹 표시
+function displayRanking(data) {
+    const container = document.getElementById('ranking-list');
+    
+    if (!data || data.length === 0) {
+        container.innerHTML = '<div class="loading">등록된 플레이어가 없습니다.</div>';
+        return;
+    }
+    
+    container.innerHTML = '';
+    
+    data.forEach((player, index) => {
+        const rankItem = document.createElement('div');
+        rankItem.className = 'rank-item real-player';
+        
+        let positionClass = '';
+        if (index === 0) positionClass = 'first';
+        else if (index === 1) positionClass = 'second';
+        else if (index === 2) positionClass = 'third';
+        
+        let valueText = '';
+        switch (currentRankingTab) {
+            case 'balance':
+                valueText = `$${player.balance.toLocaleString()}`;
+                break;
+            case 'wins':
+                valueText = `${player.wins}승`;
+                break;
+            case 'games':
+                valueText = `${player.totalGames}게임`;
+                break;
+        }
+        
+        rankItem.innerHTML = `
+            <div class="rank-position ${positionClass}">${index + 1}</div>
+            <div class="rank-info">
+                <div class="rank-nickname">${player.nickname} 🌐</div>
+                <div class="rank-details">승률: ${player.winRate}% | 총 게임: ${player.totalGames}</div>
+            </div>
+            <div class="rank-value">${valueText}</div>
+        `;
+        
+        container.appendChild(rankItem);
     });
 }
