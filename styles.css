@@ -1,0 +1,948 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    color: white;
+    min-height: 100vh;
+}
+
+header {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    backdrop-filter: blur(10px);
+}
+
+header h1 {
+    font-size: 2rem;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.balance {
+    font-size: 1.2rem;
+    font-weight: bold;
+    background: rgba(255, 215, 0, 0.2);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    border: 2px solid gold;
+}
+
+main {
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.game-selection h2 {
+    text-align: center;
+    margin-bottom: 2rem;
+    font-size: 2rem;
+}
+
+.games-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.game-card {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2rem;
+    border-radius: 15px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    backdrop-filter: blur(10px);
+}
+
+.game-card:hover {
+    transform: translateY(-5px);
+    border-color: gold;
+    box-shadow: 0 10px 30px rgba(255, 215, 0, 0.3);
+}
+
+.game-card h3 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.game-container {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 2rem;
+    border-radius: 15px;
+    backdrop-filter: blur(10px);
+}
+
+.game-container h2 {
+    text-align: center;
+    margin-bottom: 2rem;
+    font-size: 2rem;
+}
+
+/* 룰렛 스타일 */
+.roulette-wheel {
+    display: flex;
+    justify-content: center;
+    margin: 2rem 0;
+}
+
+.wheel {
+    width: 300px;
+    height: 300px;
+    border-radius: 50%;
+    background: conic-gradient(
+        red 0deg 18deg,
+        black 18deg 36deg,
+        red 36deg 54deg,
+        black 54deg 72deg,
+        red 72deg 90deg,
+        black 90deg 108deg,
+        red 108deg 126deg,
+        black 126deg 144deg,
+        red 144deg 162deg,
+        black 162deg 180deg,
+        red 180deg 198deg,
+        black 198deg 216deg,
+        red 216deg 234deg,
+        black 234deg 252deg,
+        red 252deg 270deg,
+        black 270deg 288deg,
+        red 288deg 306deg,
+        black 306deg 324deg,
+        red 324deg 342deg,
+        black 342deg 360deg
+    );
+    position: relative;
+    transition: transform 3s cubic-bezier(0.23, 1, 0.32, 1);
+    border: 5px solid gold;
+}
+
+.pointer {
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 15px solid transparent;
+    border-right: 15px solid transparent;
+    border-top: 30px solid gold;
+}
+
+.betting-area {
+    text-align: center;
+    margin: 2rem 0;
+}
+
+.bet-controls {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.bet-controls input,
+.bet-controls select,
+.bet-controls button {
+    padding: 0.8rem 1.2rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+}
+
+.bet-controls button {
+    background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.bet-controls button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(238, 90, 36, 0.4);
+}
+
+/* 블랙잭 스타일 */
+.blackjack-table {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin: 2rem 0;
+}
+
+.dealer-area,
+.player-area {
+    text-align: center;
+    background: rgba(0, 100, 0, 0.3);
+    padding: 1.5rem;
+    border-radius: 10px;
+    border: 2px solid #228B22;
+}
+
+.cards {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    margin: 1rem 0;
+    min-height: 80px;
+    flex-wrap: wrap;
+}
+
+.card {
+    width: 60px;
+    height: 80px;
+    background: white;
+    color: black;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 0.9rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.card.red {
+    color: red;
+}
+
+.blackjack-controls {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin: 2rem 0;
+}
+
+.blackjack-controls input,
+.blackjack-controls button {
+    padding: 0.8rem 1.2rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+}
+
+.blackjack-controls button {
+    background: linear-gradient(45deg, #4CAF50, #45a049);
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.blackjack-controls button:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+}
+
+.blackjack-controls button:disabled {
+    background: #666;
+    cursor: not-allowed;
+}
+
+/* 슬롯머신 스타일 */
+.slot-machine {
+    display: flex;
+    justify-content: center;
+    margin: 2rem 0;
+}
+
+.reels {
+    display: flex;
+    gap: 1rem;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 2rem;
+    border-radius: 15px;
+    border: 3px solid gold;
+}
+
+.reel {
+    width: 100px;
+    height: 100px;
+    background: white;
+    color: black;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    border-radius: 10px;
+    transition: all 0.5s ease;
+}
+
+.slot-controls {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin: 2rem 0;
+}
+
+.slot-controls input,
+.slot-controls button {
+    padding: 0.8rem 1.2rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+}
+
+.slot-controls button {
+    background: linear-gradient(45deg, #9C27B0, #7B1FA2);
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.slot-controls button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(156, 39, 176, 0.4);
+}
+
+.back-btn {
+    background: linear-gradient(45deg, #607D8B, #455A64);
+    color: white;
+    border: none;
+    padding: 0.8rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    margin-top: 2rem;
+    transition: all 0.3s ease;
+}
+
+.back-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(96, 125, 139, 0.4);
+}
+
+@media (max-width: 768px) {
+    .games-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .blackjack-table {
+        grid-template-columns: 1fr;
+    }
+    
+    .bet-controls,
+    .blackjack-controls,
+    .slot-controls {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .reels {
+        flex-direction: column;
+        align-items: center;
+    }
+}
+
+/* 포커 스타일 */
+.poker-table {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin: 2rem 0;
+}
+
+.player-hand,
+.computer-hand {
+    text-align: center;
+    background: rgba(0, 100, 0, 0.3);
+    padding: 1.5rem;
+    border-radius: 10px;
+    border: 2px solid #228B22;
+}
+
+.poker-controls {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin: 2rem 0;
+    flex-wrap: wrap;
+}
+
+.poker-controls input,
+.poker-controls button {
+    padding: 0.8rem 1.2rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+}
+
+.poker-controls button {
+    background: linear-gradient(45deg, #8E24AA, #7B1FA2);
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.poker-controls button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(142, 36, 170, 0.4);
+}
+
+#poker-result {
+    text-align: center;
+    font-size: 1.2rem;
+    margin: 1rem 0;
+    font-weight: bold;
+}
+
+/* 바카라 스타일 */
+.baccarat-table {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin: 2rem 0;
+}
+
+.player-area,
+.banker-area {
+    text-align: center;
+    background: rgba(0, 100, 0, 0.3);
+    padding: 1.5rem;
+    border-radius: 10px;
+    border: 2px solid #228B22;
+}
+
+.baccarat-controls {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin: 2rem 0;
+    flex-wrap: wrap;
+}
+
+.baccarat-controls input,
+.baccarat-controls select,
+.baccarat-controls button {
+    padding: 0.8rem 1.2rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+}
+
+.baccarat-controls button {
+    background: linear-gradient(45deg, #FF5722, #E64A19);
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.baccarat-controls button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 87, 34, 0.4);
+}
+
+/* 주사위 스타일 */
+.dice-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 2rem 0;
+}
+
+.dice {
+    font-size: 4rem;
+    margin: 0.5rem;
+    transition: transform 0.5s ease;
+}
+
+.dice.rolling {
+    animation: roll 1s infinite;
+}
+
+@keyframes roll {
+    0% { transform: rotate(0deg); }
+    25% { transform: rotate(90deg); }
+    50% { transform: rotate(180deg); }
+    75% { transform: rotate(270deg); }
+    100% { transform: rotate(360deg); }
+}
+
+#dice-sum {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin: 1rem 0;
+}
+
+.dice-controls {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin: 2rem 0;
+    flex-wrap: wrap;
+}
+
+.dice-controls input,
+.dice-controls select,
+.dice-controls button {
+    padding: 0.8rem 1.2rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+}
+
+.dice-controls button {
+    background: linear-gradient(45deg, #2196F3, #1976D2);
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.dice-controls button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(33, 150, 243, 0.4);
+}
+
+/* 동전던지기 스타일 */
+.coin-area {
+    display: flex;
+    justify-content: center;
+    margin: 2rem 0;
+}
+
+.coin {
+    font-size: 6rem;
+    transition: transform 1s ease;
+}
+
+.coin.flipping {
+    animation: flip 1s infinite;
+}
+
+@keyframes flip {
+    0% { transform: rotateY(0deg); }
+    50% { transform: rotateY(180deg); }
+    100% { transform: rotateY(360deg); }
+}
+
+.coin-controls {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin: 2rem 0;
+    flex-wrap: wrap;
+}
+
+.coin-controls input,
+.coin-controls select,
+.coin-controls button {
+    padding: 0.8rem 1.2rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+}
+
+.coin-controls button {
+    background: linear-gradient(45deg, #FFC107, #FF8F00);
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.coin-controls button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 193, 7, 0.4);
+}
+
+/* 가위바위보 스타일 */
+.rps-area {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    margin: 2rem 0;
+}
+
+.player-choice,
+.computer-choice {
+    text-align: center;
+}
+
+.vs {
+    font-size: 2rem;
+    font-weight: bold;
+}
+
+#player-rps,
+#computer-rps {
+    font-size: 4rem;
+    margin: 1rem 0;
+}
+
+.rps-controls {
+    text-align: center;
+    margin: 2rem 0;
+}
+
+.rps-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin: 1rem 0;
+    flex-wrap: wrap;
+}
+
+.rps-buttons button {
+    padding: 1rem 1.5rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.2rem;
+    background: linear-gradient(45deg, #E91E63, #C2185B);
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.rps-buttons button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(233, 30, 99, 0.4);
+}
+
+.rps-controls input {
+    padding: 0.8rem 1.2rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    margin-bottom: 1rem;
+}
+
+/* 달팽이 레이싱 스타일 */
+.racing-track {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 2rem;
+    border-radius: 15px;
+    margin: 2rem 0;
+}
+
+.track {
+    display: flex;
+    align-items: center;
+    margin: 1rem 0;
+    padding: 0.5rem;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    position: relative;
+    height: 60px;
+}
+
+.lane-number {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-right: 1rem;
+    width: 30px;
+}
+
+.snail {
+    font-size: 2rem;
+    position: absolute;
+    left: 60px;
+    transition: left 0.1s ease;
+}
+
+.finish-line {
+    position: absolute;
+    right: 20px;
+    font-size: 2rem;
+}
+
+.racing-controls {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin: 2rem 0;
+    flex-wrap: wrap;
+}
+
+.racing-controls input,
+.racing-controls select,
+.racing-controls button {
+    padding: 0.8rem 1.2rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+}
+
+.racing-controls button {
+    background: linear-gradient(45deg, #795548, #5D4037);
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.racing-controls button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(121, 85, 72, 0.4);
+}
+
+/* 행운의 바퀴 스타일 */
+.wheel-area {
+    display: flex;
+    justify-content: center;
+    margin: 2rem 0;
+}
+
+.fortune-wheel {
+    width: 300px;
+    height: 300px;
+    border-radius: 50%;
+    position: relative;
+    background: conic-gradient(
+        #ff6b6b 0deg 60deg,
+        #4ecdc4 60deg 120deg,
+        #45b7d1 120deg 180deg,
+        #96ceb4 180deg 240deg,
+        #feca57 240deg 300deg,
+        #ff9ff3 300deg 360deg
+    );
+    border: 5px solid gold;
+    transition: transform 3s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.wheel-pointer {
+    position: absolute;
+    top: -15px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 20px solid transparent;
+    border-right: 20px solid transparent;
+    border-top: 40px solid gold;
+    z-index: 10;
+}
+
+.wheel-section {
+    position: absolute;
+    width: 50%;
+    height: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.2rem;
+    color: white;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.wheel-controls {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin: 2rem 0;
+    flex-wrap: wrap;
+}
+
+.wheel-controls input,
+.wheel-controls button {
+    padding: 0.8rem 1.2rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+}
+
+.wheel-controls button {
+    background: linear-gradient(45deg, #FF6B6B, #EE5A24);
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.wheel-controls button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+}
+
+/* 복권 스타일 */
+.lottery-area {
+    margin: 2rem 0;
+}
+
+.number-selection {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.lottery-numbers {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 0.5rem;
+    max-width: 600px;
+    margin: 1rem auto;
+}
+
+.lottery-number {
+    padding: 0.8rem;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+    font-weight: bold;
+}
+
+.lottery-number:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: gold;
+}
+
+.lottery-number.selected {
+    background: gold;
+    color: black;
+    border-color: gold;
+}
+
+.selected-numbers {
+    text-align: center;
+    margin: 2rem 0;
+}
+
+#selected-numbers {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin: 1rem 0;
+    min-height: 2rem;
+}
+
+.lottery-controls {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin: 2rem 0;
+    flex-wrap: wrap;
+}
+
+.lottery-controls input,
+.lottery-controls button {
+    padding: 0.8rem 1.2rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+}
+
+.lottery-controls button {
+    background: linear-gradient(45deg, #673AB7, #512DA8);
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.lottery-controls button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(103, 58, 183, 0.4);
+}
+
+/* 크래시 게임 스타일 */
+.crash-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 2rem 0;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 2rem;
+    border-radius: 15px;
+}
+
+.multiplier {
+    font-size: 3rem;
+    font-weight: bold;
+    color: #00ff00;
+    margin-bottom: 1rem;
+    text-shadow: 0 0 10px #00ff00;
+}
+
+.rocket {
+    font-size: 4rem;
+    transition: transform 0.1s ease;
+}
+
+.rocket.flying {
+    animation: fly 0.5s infinite alternate;
+}
+
+@keyframes fly {
+    0% { transform: translateY(0px); }
+    100% { transform: translateY(-10px); }
+}
+
+.crash-controls {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin: 2rem 0;
+    flex-wrap: wrap;
+}
+
+.crash-controls input,
+.crash-controls button {
+    padding: 0.8rem 1.2rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+}
+
+#crash-start-btn {
+    background: linear-gradient(45deg, #4CAF50, #45a049);
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+#crash-cashout-btn {
+    background: linear-gradient(45deg, #f44336, #d32f2f);
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.crash-controls button:hover:not(:disabled) {
+    transform: translateY(-2px);
+}
+
+.crash-controls button:disabled {
+    background: #666;
+    cursor: not-allowed;
+}
+
+#crash-result {
+    text-align: center;
+    font-size: 1.2rem;
+    margin: 1rem 0;
+    font-weight: bold;
+}
+
+@media (max-width: 768px) {
+    .poker-table,
+    .baccarat-table {
+        grid-template-columns: 1fr;
+    }
+    
+    .rps-area {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .lottery-numbers {
+        grid-template-columns: repeat(5, 1fr);
+    }
+    
+    .racing-track {
+        padding: 1rem;
+    }
+    
+    .track {
+        height: 50px;
+    }
+    
+    .snail {
+        font-size: 1.5rem;
+    }
+}
