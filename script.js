@@ -104,24 +104,7 @@ function loadGame() {
 
 // 게임 리셋
 function resetGame() {
-    if (confirm('정말로 게임을 초기화하시겠습니까? 모든 진행 상황과 통계가 삭제됩니다.')) {
-        localStorage.removeItem(SAVE_KEY);
-        balance = 1000;
-        gameStats = {
-            totalGames: 0,
-            totalBet: 0,
-            totalWon: 0,
-            wins: 0,
-            maxBalance: 1000,
-            gameCount: {
-                roulette: 0, blackjack: 0, slots: 0, poker: 0, baccarat: 0,
-                dice: 0, coinflip: 0, rps: 0, racing: 0, wheel: 0, lottery: 0, crash: 0
-            }
-        };
-        updateBalanceDisplay();
-        showGameSelection();
-        alert('게임이 초기화되었습니다!');
-    }
+    // 리셋 기능 제거됨
 }
 
 // 잔액 표시 업데이트
@@ -189,12 +172,12 @@ let realRankingData = []; // 실제 사용자 데이터만
 // Supabase 연결 함수
 async function connectToSupabase() {
     try {
-        if (typeof window.supabase !== 'undefined') {
+        if (typeof supabase === 'undefined' || !supabase) {
             supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         }
         
         // 연결 테스트
-        const { data, error } = await window.supabase.from('players').select('count');
+        const { data, error } = await supabase.from('players').select('count');
         
         if (error && error.code !== 'PGRST116') {
             throw error;
@@ -512,8 +495,9 @@ function spinRoulette() {
     
     // 룰렛 휠 회전
     const wheel = document.getElementById('wheel');
-    const randomRotation = Math.random() * 360 + 1800;
+    const randomRotation = Math.random() * 360 + 3600;
     wheel.style.transform = `rotate(${randomRotation}deg)`;
+    wheel.style.transition = 'transform 3s ease-out';
     
     document.getElementById('spin-btn').disabled = true;
     
@@ -729,6 +713,8 @@ function hit() {
     
     if (playerScore > 21) {
         // 버스트
+        const betAmount = parseInt(document.getElementById('blackjack-bet').value);
+        updateGameStats('blackjack', betAmount, 0);
         endGame('버스트! 딜러가 승리했습니다.');
     } else if (playerScore === 21) {
         stand(); // 21이면 자동으로 스탠드
@@ -770,6 +756,9 @@ function stand() {
     
     if (winAmount > 0) {
         updateBalance(winAmount);
+        updateGameStats('blackjack', betAmount, winAmount);
+    } else {
+        updateGameStats('blackjack', betAmount, 0);
     }
     
     endGame(message);
@@ -862,8 +851,10 @@ function checkSlotResults(results, betAmount) {
         
         if (winAmount > 0) {
             updateBalance(winAmount);
+            updateGameStats('slots', betAmount, winAmount);
             alert(`${message} $${winAmount}를 획득했습니다!`);
         } else {
+            updateGameStats('slots', betAmount, 0);
             alert(message);
         }
     }, 1000);
@@ -930,6 +921,9 @@ function startPoker() {
     
     if (winAmount > 0) {
         updateBalance(winAmount);
+        updateGameStats('poker', betAmount, winAmount);
+    } else {
+        updateGameStats('poker', betAmount, 0);
     }
     
     document.getElementById('poker-result').textContent = result;
@@ -999,6 +993,9 @@ function startBaccarat() {
     
     if (winAmount > 0) {
         updateBalance(Math.floor(winAmount));
+        updateGameStats('baccarat', betAmount, Math.floor(winAmount));
+    } else {
+        updateGameStats('baccarat', betAmount, 0);
     }
     
     alert(result);
@@ -1062,8 +1059,10 @@ function rollDice() {
         
         if (won) {
             updateBalance(winAmount);
+            updateGameStats('dice', betAmount, winAmount);
             alert(`축하합니다! 합계 ${sum}. $${winAmount}를 획득했습니다!`);
         } else {
+            updateGameStats('dice', betAmount, 0);
             alert(`아쉽습니다! 합계 ${sum}.`);
         }
         
@@ -1094,8 +1093,10 @@ function flipCoin() {
         if (result === choice) {
             const winAmount = betAmount * 2;
             updateBalance(winAmount);
+            updateGameStats('coinflip', betAmount, winAmount);
             alert(`축하합니다! ${result === 'heads' ? '앞면' : '뒷면'}이 나왔습니다! $${winAmount}를 획득했습니다!`);
         } else {
+            updateGameStats('coinflip', betAmount, 0);
             alert(`아쉽습니다! ${result === 'heads' ? '앞면' : '뒷면'}이 나왔습니다.`);
         }
         
@@ -1140,8 +1141,10 @@ function playRPS(playerChoice) {
     
     if (winAmount > 0) {
         updateBalance(winAmount);
+        updateGameStats('rps', betAmount, winAmount);
         alert(`${result} $${winAmount}를 획득했습니다!`);
     } else {
+        updateGameStats('rps', betAmount, 0);
         alert(result);
     }
     
@@ -1181,8 +1184,8 @@ function startRace() {
             
             snail.style.left = newLeft + 'px';
             
-            // 결승선 체크 (대략 400px)
-            if (newLeft >= 400 && !winner) {
+            // 결승선 체크 (800px)
+            if (newLeft >= 800 && !winner) {
                 winner = i;
             }
         }
@@ -1194,8 +1197,10 @@ function startRace() {
             if (winner === chosenSnail) {
                 const winAmount = betAmount * 4;
                 updateBalance(winAmount);
+                updateGameStats('racing', betAmount, winAmount);
                 alert(`축하합니다! ${winner}번 달팽이가 승리했습니다! $${winAmount}를 획득했습니다!`);
             } else {
+                updateGameStats('racing', betAmount, 0);
                 alert(`아쉽습니다! ${winner}번 달팽이가 승리했습니다.`);
             }
             
@@ -1217,9 +1222,10 @@ function spinWheel() {
     
     const wheel = document.getElementById('fortune-wheel');
     const prizes = [1000, 500, 100, 50, 10, 0];
-    const randomRotation = Math.random() * 360 + 1800;
+    const randomRotation = Math.random() * 360 + 3600;
     
     wheel.style.transform = `rotate(${randomRotation}deg)`;
+    wheel.style.transition = 'transform 3s ease-out';
     
     setTimeout(() => {
         const prizeIndex = Math.floor(Math.random() * prizes.length);
@@ -1227,8 +1233,10 @@ function spinWheel() {
         
         if (prize > 0) {
             updateBalance(prize);
+            updateGameStats('wheel', betAmount, prize);
             alert(`축하합니다! $${prize}를 획득했습니다!`);
         } else {
+            updateGameStats('wheel', betAmount, 0);
             alert('아쉽습니다! 다음 기회에!');
         }
         
@@ -1335,7 +1343,10 @@ function buyLottery() {
     
     if (winAmount > 0) {
         updateBalance(winAmount);
+        updateGameStats('lottery', betAmount, winAmount);
         message += ` $${winAmount}를 획득했습니다!`;
+    } else {
+        updateGameStats('lottery', betAmount, 0);
     }
     
     alert(message);
@@ -1379,6 +1390,7 @@ function startCrash() {
         if (crashGame.multiplier >= crashGame.crashPoint) {
             clearInterval(crashInterval);
             crashGame.inProgress = false;
+            updateGameStats('crash', crashGame.betAmount, 0);
             document.getElementById('crash-start-btn').disabled = false;
             document.getElementById('crash-cashout-btn').disabled = true;
             document.getElementById('rocket').classList.remove('flying');
@@ -1398,6 +1410,7 @@ function cashOut() {
     const winAmount = Math.floor(crashGame.betAmount * crashGame.multiplier);
     
     updateBalance(winAmount);
+    updateGameStats('crash', crashGame.betAmount, winAmount);
     
     // 타이머 정리
     clearInterval(window.crashInterval);
@@ -2104,7 +2117,7 @@ async function checkAuthState() {
     if (!supabase) return;
     
     try {
-        const { data: { session } } = await window.supabase.auth.getSession();
+        const { data: { session } } = await supabase.auth.getSession();
         
         if (session) {
             currentUser = session.user;
