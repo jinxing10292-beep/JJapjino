@@ -9,6 +9,7 @@ let isOnline = false;
 let currentUser = null;
 
 // Supabase 초기화 (전역 supabase 객체 사용)
+let supabase = null;
 
 // 랭킹 예측 베팅 시스템
 let predictionBets = [];
@@ -21,6 +22,20 @@ let deck = [];
 let playerCards = [];
 let dealerCards = [];
 let gameInProgress = false;
+
+// 포커 게임 상태
+let pokerGameState = {
+    playerHand: [],
+    computerHand: [],
+    communityCards: [],
+    playerBet: 0,
+    computerBet: 0,
+    pot: 0,
+    round: 0, // 0: 프리플랍, 1: 플랍, 2: 턴, 3: 리버
+    gameActive: false,
+    playerFolded: false,
+    computerFolded: false
+};
 
 // 통계 데이터
 let gameStats = {
@@ -888,67 +903,221 @@ document.addEventListener('DOMContentLoaded', function() {
 // 포커 게임
 function startPoker() {
     const betAmount = parseInt(document.getElementById('poker-bet').value);
-    
+
     if (!betAmount || betAmount <= 0 || betAmount > balance) {
         alert('올바른 베팅 금액을 입력하세요!');
         return;
     }
-    
-    updateBalance(-betAmount);
-    
+
+    // 게임 초기화
     createDeck();
-    const playerHand = [drawCard(), drawCard(), drawCard(), drawCard(), drawCard()];
-    const computerHand = [drawCard(), drawCard(), drawCard(), drawCard(), drawCard()];
-    
-    displayCards(playerHand, 'poker-player-cards');
-    displayCards(computerHand, 'poker-computer-cards');
-    
-    const playerRank = getPokerHandRank(playerHand);
-    const computerRank = getPokerHandRank(computerHand);
-    
-    let result = '';
-    let winAmount = 0;
-    
-    if (playerRank.rank > computerRank.rank) {
-        result = `승리! ${playerRank.name} vs ${computerRank.name}`;
-        winAmount = betAmount * 2;
-    } else if (playerRank.rank < computerRank.rank) {
-        result = `패배! ${playerRank.name} vs ${computerRank.name}`;
-    } else {
-        result = `무승부! ${playerRank.name}`;
-        winAmount = betAmount;
-    }
-    
-    if (winAmount > 0) {
-        updateBalance(winAmount);
-        updateGameStats('poker', betAmount, winAmount);
-    } else {
-        updateGameStats('poker', betAmount, 0);
-    }
-    
-    document.getElementById('poker-result').textContent = result;
-    document.getElementById('poker-bet').value = '';
+    pokerGameState.playerHand = [drawCard(), drawCard()];
+    pokerGameState.computerHand = [drawCard(), drawCard()];
+    pokerGameState.communityCards = [];
+    pokerGameState.playerBet = betAmount;
+    pokerGameState.computerBet = betAmount;
+    pokerGameState.pot = betAmount * 2;
+    pokerGameState.round = 0;
+    pokerGameState.gameActive = true;
+    pokerGameState.playerFolded = false;
+    pokerGameState.computerFolded = false;
+
+    updateBalance(-betAmount);
+
+    // UI 업데이트
+    document.getElementById('poker-result').innerHTML = `
+        <div class="poker-status">
+            <p>🎴 프리플랍 - 팟: $${pokerGameState.pot}</p>
+            <p>당신의 패: 2장 (숨김)</p>
+            <button onclick="pokerCheck()">체크</button>
+            <button onclick="pokerRaise()">레이즈</button>
+            <button onclick="pokerFold()">폴드</button>
+        </div>
+    `;
+
+    displayCards(pokerGameState.playerHand, 'poker-player-cards');
+    document.getElementById('poker-computer-cards').innerHTML = '<div class="card hidden"></div><div class="card hidden"></div>';
 }
 
+function pokerCheck() {
+    if (pokerGameState.round < 3) {
+        // 다음 라운드로
+        pokerGameState.round++;
+        updatePokerRound();
+    } else {
+        // 쇼다운
+        pokerShowdown();
+    }
+}
+
+function pokerRaise() {
+    const raiseAmount = Math.min(50, balance);
+    if (raiseAmount <= 0) {
+        alert('베팅할 금액이 부족합니다!');
+        return;
+    }
+
+    updateBalance(-raiseAmount);
+    pokerGameState.playerBet += raiseAmount;
+    pokerGameState.pot += raiseAmount * 2;
+
+    // 컴퓨터 반응 (50% 확률로 콜)
+    if (Math.random() > 0.5) {
+        pokerGameState.computerBet += raiseAmount;
+        pokerGameState.pot += raiseAmount;
+        pokerCheck();
+    } else {
+        pokerGameState.computerFolded = true;
+        pokerShowdown();
+    }
+}
+
+function pokerFold() {
+    pokerGameState.playerFolded = true;
+    pokerShowdown();
+}
+
+function updatePokerRound() {
+    const roundNames = ['플랍', '턴', '리버', '쇼다운'];
+    const cardsToAdd = [3, 1, 1, 0];
+
+    if (pokerGameState.round <= 3) {
+        for (let i = 0; i < cardsToAdd[pokerGameState.round - 1]; i++) {
+            pokerGameState.communityCards.push(drawCard());
+        }
+    }
+
+    const communityDisplay = pokerGameState.communityCards.map(card =>
+        `<div class="card">${card.rank}${card.suit}</div>`
+    ).join('');
+
+    document.getElementById('poker-result').innerHTML = `
+        <div class="poker-status">
+            <p>🎴 ${roundNames[pokerGameState.round - 1]} - 팟: $${pokerGameState.pot}</p>
+            <div class="community-cards">${communityDisplay}</div>
+            <button onclick="pokerCheck()">체크</button>
+            <button onclick="pokerRaise()">레이즈</button>
+            <button onclick="pokerFold()">폴드</button>
+        </div>
+    `;
+}
+
+function pokerShowdown() {
+    // 최고 5장 조합 찾기
+    const playerAllCards = [...pokerGameState.playerHand, ...pokerGameState.communityCards];
+    const computerAllCards = [...pokerGameState.computerHand, ...pokerGameState.communityCards];
+
+    const playerBest = getBestPokerHand(playerAllCards);
+    const computerBest = getBestPokerHand(computerAllCards);
+
+    let result = '';
+    let winAmount = 0;
+
+    if (pokerGameState.playerFolded) {
+        result = '폴드! 컴퓨터 승리!';
+    } else if (pokerGameState.computerFolded) {
+        result = '컴퓨터 폴드! 당신 승리!';
+        winAmount = pokerGameState.pot;
+    } else if (playerBest.rank > computerBest.rank) {
+        result = `승리! ${playerBest.name} vs ${computerBest.name}`;
+        winAmount = pokerGameState.pot;
+    } else if (playerBest.rank < computerBest.rank) {
+        result = `패배! ${playerBest.name} vs ${computerBest.name}`;
+    } else {
+        result = `무승부! ${playerBest.name}`;
+        winAmount = pokerGameState.pot / 2;
+    }
+
+    if (winAmount > 0) {
+        updateBalance(winAmount);
+        updateGameStats('poker', pokerGameState.playerBet, winAmount);
+    } else {
+        updateGameStats('poker', pokerGameState.playerBet, 0);
+    }
+
+    document.getElementById('poker-result').innerHTML = `
+        <div class="poker-result">
+            <p>${result}</p>
+            <p>팟: $${pokerGameState.pot}</p>
+            <button onclick="showGameSelection()">게임 선택으로 돌아가기</button>
+        </div>
+    `;
+
+    pokerGameState.gameActive = false;
+}
+
+function getBestPokerHand(allCards) {
+    // 7장 중 최고 5장 조합 찾기
+    let bestHand = null;
+    let bestRank = -1;
+
+    for (let i = 0; i < allCards.length; i++) {
+        for (let j = i + 1; j < allCards.length; j++) {
+            const hand = allCards.filter((_, idx) => idx !== i && idx !== j);
+            const rank = getPokerHandRank(hand);
+
+            if (rank.rank > bestRank) {
+                bestRank = rank.rank;
+                bestHand = rank;
+            }
+        }
+    }
+
+    return bestHand || getPokerHandRank(allCards.slice(0, 5));
+}
+
+
 function getPokerHandRank(hand) {
-    const ranks = hand.map(card => card.rank);
+    // 5장의 카드로 최고 족보를 판정
+    const ranks = hand.map(card => {
+        const rankMap = { 'A': 14, 'K': 13, 'Q': 12, 'J': 11 };
+        return rankMap[card.rank] || parseInt(card.rank);
+    });
     const suits = hand.map(card => card.suit);
-    
-    // 간단한 포커 핸드 랭킹 (페어, 투페어, 트리플 등)
+
     const rankCounts = {};
     ranks.forEach(rank => {
         rankCounts[rank] = (rankCounts[rank] || 0) + 1;
     });
-    
+
     const counts = Object.values(rankCounts).sort((a, b) => b - a);
-    
-    if (counts[0] === 4) return { rank: 7, name: '포카드' };
-    if (counts[0] === 3 && counts[1] === 2) return { rank: 6, name: '풀하우스' };
-    if (counts[0] === 3) return { rank: 3, name: '트리플' };
-    if (counts[0] === 2 && counts[1] === 2) return { rank: 2, name: '투페어' };
-    if (counts[0] === 2) return { rank: 1, name: '원페어' };
-    return { rank: 0, name: '하이카드' };
+    const uniqueRanks = Object.keys(rankCounts).map(Number).sort((a, b) => b - a);
+
+    // 플러시 확인
+    const isFlush = suits.every(suit => suit === suits[0]);
+
+    // 스트레이트 확인
+    const isStraight = uniqueRanks.length === 5 && (uniqueRanks[0] - uniqueRanks[4] === 4);
+    const isWheelStraight = uniqueRanks.join(',') === '14,5,4,3,2'; // A-2-3-4-5
+
+    // 족보 판정 (높을수록 강함)
+    if ((isStraight || isWheelStraight) && isFlush) {
+        return { rank: 8, name: '로얄 스트레이트 플러시', value: uniqueRanks[0] };
+    }
+    if (counts[0] === 4) {
+        return { rank: 7, name: '포카드', value: uniqueRanks[0] };
+    }
+    if (counts[0] === 3 && counts[1] === 2) {
+        return { rank: 6, name: '풀하우스', value: uniqueRanks[0] };
+    }
+    if (isFlush) {
+        return { rank: 5, name: '플러시', value: uniqueRanks[0] };
+    }
+    if (isStraight || isWheelStraight) {
+        return { rank: 4, name: '스트레이트', value: uniqueRanks[0] };
+    }
+    if (counts[0] === 3) {
+        return { rank: 3, name: '트리플', value: uniqueRanks[0] };
+    }
+    if (counts[0] === 2 && counts[1] === 2) {
+        return { rank: 2, name: '투페어', value: uniqueRanks[0] };
+    }
+    if (counts[0] === 2) {
+        return { rank: 1, name: '원페어', value: uniqueRanks[0] };
+    }
+    return { rank: 0, name: '하이카드', value: uniqueRanks[0] };
 }
+
 
 // 바카라 게임
 function startBaccarat() {
@@ -2114,11 +2283,14 @@ let nicknameChecked = false;
 
 // 인증 상태 확인
 async function checkAuthState() {
-    if (!supabase) return;
-    
+    if (!supabase) {
+        updateUIForLoggedOutUser();
+        return;
+    }
+
     try {
         const { data: { session } } = await supabase.auth.getSession();
-        
+
         if (session) {
             currentUser = session.user;
             await loadUserProfile();
@@ -2131,6 +2303,7 @@ async function checkAuthState() {
         updateUIForLoggedOutUser();
     }
 }
+
 
 // 사용자 프로필 로드
 async function loadUserProfile() {
@@ -2583,3 +2756,21 @@ function displayRanking(data) {
         container.appendChild(rankItem);
     });
 }
+
+
+// 페이지 로드 시 초기화
+document.addEventListener('DOMContentLoaded', async () => {
+    // Supabase 클라이언트 초기화
+    if (typeof window.supabase !== 'undefined') {
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    }
+    
+    // 인증 상태 확인
+    await checkAuthState();
+    
+    // 게임 통계 로드
+    loadGame();
+    
+    // 회원가입 유효성 검사 설정
+    setupSignupValidation();
+});
